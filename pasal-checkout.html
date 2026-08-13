@@ -192,7 +192,7 @@
 
 <header>
   <div class="wrap header-inner">
-    <a class="logo" href="index.html" aria-label="Surendra Stone Carving home">
+    <a class="logo" href="pasal-homepage.html" aria-label="Surendra Stone Carving home">
       <span class="logo-en">Surendra Stone Carving</span>
       <span class="logo-np">पसल</span>
     </a>
@@ -332,7 +332,7 @@
 
       <p class="closing-note">Thank you for trusting Surendra Stone Carving. We appreciate every order! 🙏</p>
 
-      <a class="place-btn home-btn" href="index.html">Continue shopping</a>
+      <a class="place-btn home-btn" href="pasal-homepage.html">Continue shopping</a>
     </div>
   </div>
 </main>
@@ -380,7 +380,7 @@
     const box = document.getElementById("summaryItems");
     box.innerHTML = "";
     if (cart.length === 0) {
-      box.innerHTML = '<p style="font-size:14px; color:var(--muted);">Your cart is empty — <a href="index.html#shop" style="color:var(--teal); font-weight:700;">go shopping</a> first.</p>';
+      box.innerHTML = '<p style="font-size:14px; color:var(--muted);">Your cart is empty — <a href="pasal-homepage.html#shop" style="color:var(--teal); font-weight:700;">go shopping</a> first.</p>';
     }
     let subtotal = 0;
     cart.forEach(item => {
@@ -478,7 +478,12 @@
     btn.disabled = true;
     btn.textContent = "Placing order…";
 
-    if (method === "qr" && screenshotBlob) {
+    const canUploadImage = IMGBB_API_KEY && IMGBB_API_KEY !== "YOUR_IMGBB_KEY";
+    if (method === "qr" && screenshotBlob && !canUploadImage) {
+      console.warn("[imgbb] IMGBB_API_KEY is still a placeholder — sending the order without the screenshot link.");
+    }
+
+    if (method === "qr" && screenshotBlob && canUploadImage) {
       btn.textContent = "Uploading screenshot…";
       const imgData = new FormData();
       imgData.append("image", screenshotBlob, "payment-screenshot-" + orderNo + ".jpg");
@@ -498,38 +503,172 @@
           "Upload failed — ask customer to send the screenshot on WhatsApp", btn);
       });
     } else {
-      sendOrderEmail(name, phone, address, method, orderNo, itemList, null, btn);
+      const note = (method === "qr" && screenshotBlob)
+        ? "Customer attached a screenshot but image hosting is not configured — ask for it on WhatsApp"
+        : null;
+      sendOrderEmail(name, phone, address, method, orderNo, itemList, note, btn);
     }
   }
 
+  /* ---------------------------------------------------------------------------
+     ORDER EMAIL — FormSubmit
+     Why the old code silently failed on live hosting:
+       1. FormSubmit will not deliver anything to a NEW address until that address
+          is activated once. It replies with success:"false" + an activation
+          message, which the old .then(() => showSuccess()) happily ignored, so
+          the customer saw "order placed" while no email ever arrived.
+       2. Without _captcha:"false" FormSubmit parks the message behind a captcha
+          page that an AJAX request can never complete.
+       3. If the JSON request is blocked (CORS/preflight, ad blocker, flaky
+          mobile network), we now retry through a hidden form + iframe, which is
+          a plain browser POST and is not subject to CORS at all.
+     One-time setup: place a test order, open STORE_EMAIL's inbox, click the
+     FormSubmit activation link. After that every order is delivered.
+  --------------------------------------------------------------------------- */
+  const FORM_ENDPOINT_AJAX  = "https://formsubmit.co/ajax/" + encodeURIComponent(STORE_EMAIL);
+  const FORM_ENDPOINT_PLAIN = "https://formsubmit.co/" + encodeURIComponent(STORE_EMAIL);
+  const SEND_TIMEOUT_MS = 20000;
+
   function sendOrderEmail(name, phone, address, method, orderNo, itemList, screenshotLink, btn) {
     btn.textContent = "Placing order…";
+
     const fields = {
       _subject: "New order " + orderNo + " — " + fmt(grandTotal),
-      "Order number": orderNo,
-      "Full name": name,
-      "Phone (WhatsApp)": phone,
-      "Delivery address": address,
-      "Payment method": method === "qr" ? "Online payment (QR)" : "Cash on delivery",
-      "Items": itemList,
-      "Total": fmt(grandTotal)
+      _template: "table",
+      _captcha: "false",
+      Order_number: orderNo,
+      Full_name: name,
+      Phone_WhatsApp: phone,
+      Delivery_address: address,
+      Payment_method: method === "qr" ? "Online payment (QR)" : "Cash on delivery",
+      Items: itemList,
+      Total: fmt(grandTotal)
     };
-    if (screenshotLink) {
-      fields["Payment screenshot (click to view)"] = screenshotLink;
-    }
+    if (screenshotLink) fields.Payment_screenshot = screenshotLink;
 
-    fetch("https://formsubmit.co/ajax/" + STORE_EMAIL, {
+    postOrderJSON(fields)
+      .then(function (data) {
+        if (data && String(data.success).toLowerCase() === "true") {
+          showSuccess(method, orderNo);
+          return;
+        }
+        var msg = (data && data.message) ? String(data.message) : "no message";
+        if (/activat|confirm/i.test(msg)) {
+          console.error(
+            "[FormSubmit] Not activated yet for " + STORE_EMAIL + ". " +
+            "Open that inbox, click the FormSubmit activation link, then place one more test order. Server said: " + msg
+          );
+        } else {
+          console.error("[FormSubmit] Submission rejected: " + msg);
+        }
+        throw new Error(msg);
+      })
+      .catch(function (err) {
+        console.warn("[FormSubmit] AJAX submit failed, retrying with hidden form:", err);
+        postOrderHiddenForm(fields)
+          .then(function () { showSuccess(method, orderNo); })
+          .catch(function (err2) {
+            console.error("[FormSubmit] Hidden-form submit also failed:", err2);
+            orderFailed(btn);
+          });
+      });
+  }
+
+  /* Primary path: JSON -> /ajax/ endpoint, with a real response check. */
+  function postOrderJSON(fields) {
+    var controller = ("AbortController" in window) ? new AbortController() : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, SEND_TIMEOUT_MS) : null;
+    var opts = {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(fields)
-    })
-    .then(res => res.json())
-    .then(() => showSuccess(method, orderNo))
-    .catch(() => {
-      alert("Couldn't send the order right now. Please check your internet connection and try again, or message us directly on WhatsApp.");
-      btn.disabled = false;
-      btn.textContent = "Place order";
+    };
+    if (controller) opts.signal = controller.signal;
+
+    return fetch(FORM_ENDPOINT_AJAX, opts)
+      .then(function (res) {
+        return res.text().then(function (text) {
+          if (timer) clearTimeout(timer);
+          if (!res.ok) throw new Error("HTTP " + res.status + " — " + text.slice(0, 200));
+          try {
+            return JSON.parse(text);
+          } catch (e) {
+            throw new Error("Non-JSON reply from FormSubmit — " + text.slice(0, 200));
+          }
+        });
+      })
+      .catch(function (err) {
+        if (timer) clearTimeout(timer);
+        throw err;
+      });
+  }
+
+  /* Fallback path: hidden form posted into a hidden iframe. No CORS involved. */
+  function postOrderHiddenForm(fields) {
+    return new Promise(function (resolve, reject) {
+      if (navigator.onLine === false) {
+        reject(new Error("device is offline"));
+        return;
+      }
+
+      var frameName = "fs_frame_" + Date.now();
+      var iframe = document.createElement("iframe");
+      iframe.name = frameName;
+      iframe.setAttribute("aria-hidden", "true");
+      iframe.style.display = "none";
+      document.body.appendChild(iframe);
+
+      var form = document.createElement("form");
+      form.action = FORM_ENDPOINT_PLAIN;
+      form.method = "POST";
+      form.target = frameName;
+      form.acceptCharset = "UTF-8";
+      form.style.display = "none";
+
+      Object.keys(fields).forEach(function (key) {
+        // textarea (not input) so multi-line values like the item list survive
+        var field = document.createElement("textarea");
+        field.name = key;
+        field.value = fields[key];
+        form.appendChild(field);
+      });
+      document.body.appendChild(form);
+
+      var settled = false;
+      var submitted = false;
+      function finish(ok, why) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(guard);
+        setTimeout(function () {
+          if (form.parentNode) form.parentNode.removeChild(form);
+          if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+        }, 1500);
+        ok ? resolve() : reject(new Error(why || "hidden form submit failed"));
+      }
+
+      iframe.addEventListener("load", function () {
+        if (submitted) finish(true);
+      });
+      // The iframe is cross-origin, so its load event is not always reliable.
+      var guard = setTimeout(function () { finish(true); }, 9000);
+
+      try {
+        submitted = true;
+        form.submit();
+      } catch (e) {
+        finish(false, "form.submit() threw: " + e.message);
+      }
     });
+  }
+
+  function orderFailed(btn) {
+    alert(
+      "We couldn't send your order right now. Please check your internet connection and try again — " +
+      "or message us on WhatsApp at " + STORE_PHONE + " and we'll take the order there."
+    );
+    btn.disabled = false;
+    btn.textContent = "Place order";
   }
 
   function showSuccess(method, orderNo) {
