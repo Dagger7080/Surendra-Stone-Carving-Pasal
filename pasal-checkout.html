@@ -400,11 +400,31 @@
        4. Paste it into FORMSUBMIT_ID, then DELETE the address from STORE_EMAIL
           (leave the empty quotes) and re-upload this file.
      -------------------------------------------------------------------------- */
-  const FORMSUBMIT_ID = "";                          // e.g. "3f9a1c2b7e4d8..."
-  const STORE_EMAIL   = "sujip.shilakar@gmail.com";  // delete once FORMSUBMIT_ID is set
-  const FORM_TARGET   = FORMSUBMIT_ID || STORE_EMAIL;
+  const FORMSUBMIT_ID = "";   // <- paste your FormSubmit form ID here, then this file has no address in it at all
+
+  /* Fallback address, kept out of plain text so it is not sitting in the source
+     for anyone scrolling through it (and not scrapeable by address-harvesting
+     bots, which only pattern-match "name@domain"). Be clear-eyed about this:
+     it is obscurity, not secrecy. Anyone who runs this line in the console gets
+     the address back. FORMSUBMIT_ID above is the only version that truly
+     removes it. */
+  const STORE_EMAIL = FORMSUBMIT_ID
+    ? ""
+    : atob("t92YuwWah12ZAJXYrFGbph2cuAXaqV3c".split("").reverse().join(""));
+
+  const FORM_TARGET = FORMSUBMIT_ID || STORE_EMAIL;
   const STORE_PHONE = "98XXXXXXXX";
   const IMGBB_API_KEY = "YOUR_IMGBB_KEY";
+
+  /* Order numbering — sequential, not random.
+     ORDER_START_AT is the number the very first order gets. If you have already
+     taken orders by hand, set it to your next number and it carries on from there.
+     The counter lives in this browser's localStorage, so it counts the orders
+     placed from each device. See the note below about making it shop-wide. */
+  const ORDER_PREFIX = "PSL-";
+  const ORDER_START_AT = 1;
+  const ORDER_PAD = 4;
+  const ORDER_SEQ_KEY = "pasal_order_seq";
 
   const FREE_DELIVERY_THRESHOLD = 3000;
   const DELIVERY_FEE = 100;
@@ -433,6 +453,26 @@
   } catch (e) {}
 
   let grandTotal = 0;
+  let pendingSeq = null;   // number reserved for the order being placed
+
+  /* Reserve the next number without saving it, so a failed send does not burn
+     a number — the customer retries and gets the same one. */
+  function reserveOrderNo() {
+    let last = ORDER_START_AT - 1;
+    try {
+      const stored = parseInt(localStorage.getItem(ORDER_SEQ_KEY), 10);
+      if (!isNaN(stored)) last = stored;
+    } catch (e) {}
+    pendingSeq = last + 1;
+    return ORDER_PREFIX + String(pendingSeq).padStart(ORDER_PAD, "0");
+  }
+
+  /* Called once the order has actually gone through. */
+  function commitOrderNo() {
+    if (pendingSeq === null) return;
+    try { localStorage.setItem(ORDER_SEQ_KEY, String(pendingSeq)); } catch (e) {}
+    pendingSeq = null;
+  }
 
   function renderSummary() {
     const box = document.getElementById("summaryItems");
@@ -656,7 +696,7 @@
       showCartNote("Your cart is empty. Add some products before ordering.");
       return;
     }
-    const orderNo = "PSL-" + Math.floor(1000 + Math.random() * 9000);
+    const orderNo = reserveOrderNo();
     const itemList = cart.map(it => it.qty + " x " + it.name + " (" + fmt(it.price * it.qty) + ")").join("\n");
 
     const btn = document.querySelector(".place-btn");
@@ -866,6 +906,7 @@
   }
 
   function showSuccess(method, orderNo) {
+    commitOrderNo();
     localStorage.removeItem(CART_KEY);
     document.getElementById("checkoutLayout").style.display = "none";
     document.querySelector(".page-head").style.display = "none";
