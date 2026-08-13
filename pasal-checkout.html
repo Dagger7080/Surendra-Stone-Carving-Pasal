@@ -224,7 +224,7 @@
       <span class="logo-en">Surendra Stone Carving</span>
       <span class="logo-np">पसल</span>
     </a>
-    <span class="steps">Cart → <strong>Checkout</strong> → Done</span>
+    <span class="steps">Cart → <strong>Checkout</strong> → Done <a href="pasal-contact.html" style="color:var(--teal); font-weight:700; margin-left:10px;">Contact</a></span>
   </div>
   <div class="bunting" aria-hidden="true">
     <span></span><span></span><span></span><span></span><span></span>
@@ -257,7 +257,7 @@
                 <input id="name" type="text" placeholder="Sita Sharma">
               </div>
               <div class="form-row">
-                <label for="phone">Phone (WhatsApp preferred)</label>
+                <label for="phone">Phone (Viber preferred)</label>
                 <input id="phone" type="tel" inputmode="numeric" autocomplete="tel"
                        maxlength="14" placeholder="98XXXXXXXX"
                        aria-describedby="phoneNote">
@@ -348,7 +348,7 @@
           <span class="step-num">1</span>
           <div>
             <strong>We confirm</strong>
-            <p>Our team will contact you on WhatsApp shortly to confirm your order and delivery time.</p>
+            <p>Our team will contact you on Viber shortly to confirm your order and delivery time.</p>
           </div>
         </div>
         <div class="step">
@@ -369,7 +369,9 @@
 
       <div class="contact-box">
         <p>Please keep your phone nearby — we'll be in touch soon. Have a question in the meantime?</p>
-        <a class="contact-num" id="contactPhone" href="#">📞 Call or WhatsApp us</a>
+        <a class="contact-num" id="contactPhone" href="#">📞 Call or message us on Viber</a>
+        <a class="contact-num" id="contactViber" href="pasal-contact.html" style="background:#7360F2; margin-top:8px;">💬 Chat on Viber</a>
+        <a href="pasal-contact.html" style="display:block; margin-top:10px; font-size:14px; font-weight:700; color:var(--teal);">See all our contact details →</a>
       </div>
 
       <p class="closing-note">Thank you for trusting Surendra Stone Carving. We appreciate every order! 🙏</p>
@@ -381,7 +383,9 @@
 
 <footer>
   <div class="footer-bottom">
-    <div class="wrap">© 2026 Surendra Stone Carving · Kathmandu, Nepal</div>
+    <div class="wrap">© 2026 Surendra Stone Carving · Bhaktapur, Nepal ·
+      <a href="pasal-contact.html" style="color:var(--marigold); font-weight:700;">Contact us</a>
+    </div>
   </div>
 </footer>
 
@@ -720,16 +724,16 @@
       .then(result => {
         const link = (result && result.success && result.data && result.data.url)
           ? result.data.url
-          : "Upload failed — ask customer to send the screenshot on WhatsApp";
+          : "Upload failed — ask customer to send the screenshot on Viber";
         sendOrderEmail(name, phone, address, city, method, orderNo, itemList, link, btn);
       })
       .catch(() => {
         sendOrderEmail(name, phone, address, city, method, orderNo, itemList,
-          "Upload failed — ask customer to send the screenshot on WhatsApp", btn);
+          "Upload failed — ask customer to send the screenshot on Viber", btn);
       });
     } else {
       const note = (method === "qr" && screenshotBlob)
-        ? "Customer attached a screenshot but image hosting is not configured — ask for it on WhatsApp"
+        ? "Customer attached a screenshot but image hosting is not configured — ask for it on Viber"
         : null;
       sendOrderEmail(name, phone, address, city, method, orderNo, itemList, note, btn);
     }
@@ -771,7 +775,7 @@
       _captcha: "false",
       Order_number: orderNo,
       Full_name: name,
-      Phone_WhatsApp: phone,
+      Phone_Viber: phone,
       Delivery_address: address,
       District: city,
       Payment_method: method === "qr" ? "Online payment (QR)" : "Cash on delivery",
@@ -899,7 +903,7 @@
   function orderFailed(btn) {
     alert(
       "We couldn't send your order right now. Please check your internet connection and try again — " +
-      "or message us on WhatsApp at " + STORE_PHONE + " and we'll take the order there."
+      "or message us on Viber at " + STORE_PHONE + " and we'll take the order there."
     );
     btn.disabled = false;
     btn.textContent = "Place order";
@@ -912,11 +916,14 @@
     document.querySelector(".page-head").style.display = "none";
     document.getElementById("orderId").textContent = "Order " + orderNo + " · Total " + fmt(grandTotal);
     document.getElementById("successMsg").textContent = method === "qr"
-      ? "Your order and payment screenshot have been received. Our team will verify your payment and confirm your order on WhatsApp shortly."
+      ? "Your order and payment screenshot have been received. Our team will verify your payment and confirm your order on Viber shortly."
       : "Your order has been received. Please keep " + fmt(grandTotal) + " ready — you'll pay in cash when your order arrives at your door.";
+    const intlPhone = "+977" + STORE_PHONE.replace(/[^0-9]/g, "");
     const phoneLink = document.getElementById("contactPhone");
-    phoneLink.textContent = "📞 " + STORE_PHONE + " — Call or WhatsApp";
-    phoneLink.href = "https://wa.me/977" + STORE_PHONE.replace(/[^0-9]/g, "");
+    phoneLink.textContent = "📞 " + STORE_PHONE + " — Call us";
+    phoneLink.href = "tel:" + intlPhone;
+    const viberLink = document.getElementById("contactViber");
+    viberLink.href = "viber://chat?number=" + encodeURIComponent(intlPhone);
     document.getElementById("successPanel").classList.add("show");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }

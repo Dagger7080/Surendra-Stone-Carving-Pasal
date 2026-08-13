@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact us — Surendra Stone Carving</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Karla:wght@400;500;700&family=Mukta:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1E2A32;
+    --paper: #FAF7F0;
+    --teal: #16606B;
+    --teal-dark: #0E444D;
+    --marigold: #E8A020;
+    --marigold-soft: #FBEFD6;
+    --muted: #5C6B72;
+    --line: #E3DDD0;
+    --card: #FFFFFF;
+    --viber: #7360F2;
+    --viber-dark: #5B49CC;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Karla', sans-serif; background: var(--paper); color: var(--ink); line-height: 1.6; }
+  h1, h2, h3 { font-family: 'Bricolage Grotesque', sans-serif; line-height: 1.15; }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+  /* Header */
+  header { background: var(--paper); position: sticky; top: 0; z-index: 10; }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; }
+  .logo { display: flex; align-items: baseline; gap: 8px; }
+  .logo-en { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+  .logo-np { font-family: 'Mukta', sans-serif; font-weight: 600; font-size: 16px; color: var(--teal); }
+  nav.main { display: flex; gap: 22px; font-weight: 500; font-size: 15px; }
+  nav.main a:hover { color: var(--teal); }
+  nav.main a[aria-current="page"] { color: var(--teal); font-weight: 700; }
+  .header-actions { display: flex; align-items: center; gap: 10px; }
+  .btn {
+    border: 1.5px solid var(--ink); background: transparent; color: var(--ink);
+    padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 700;
+    transition: background 0.15s, color 0.15s; display: inline-block;
+  }
+  .btn:hover { background: var(--ink); color: var(--paper); }
+  .btn-solid { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .btn-solid:hover { background: var(--teal-dark); border-color: var(--teal-dark); color: #fff; }
+
+  .bunting { display: flex; overflow: hidden; height: 14px; }
+  .bunting span { flex: 0 0 26px; height: 14px; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+  .bunting span:nth-child(5n+1) { background: #2E6BA8; }
+  .bunting span:nth-child(5n+2) { background: #FFFFFF; border: 1px solid var(--line); }
+  .bunting span:nth-child(5n+3) { background: #C93A2E; }
+  .bunting span:nth-child(5n+4) { background: #2E8A57; }
+  .bunting span:nth-child(5n+5) { background: var(--marigold); }
+
+  main { padding: 40px 0 60px; }
+  .page-head { margin-bottom: 28px; max-width: 60ch; }
+  .page-head h1 { font-size: clamp(28px, 4vw, 40px); margin-bottom: 8px; }
+  .page-head p { color: var(--muted); font-size: 17px; }
+
+  /* Contact cards */
+  .contact-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 32px; }
+  .contact-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px; display: grid; gap: 6px; align-content: start;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .contact-card:hover { border-color: var(--teal); transform: translateY(-2px); }
+  .contact-card .glyph {
+    font-size: 22px; width: 44px; height: 44px; border-radius: 12px;
+    background: var(--marigold-soft); display: flex; align-items: center;
+    justify-content: center; margin-bottom: 6px;
+  }
+  .contact-card h2 { font-size: 17px; }
+  .contact-card .value { font-size: 20px; font-weight: 700; color: var(--teal); word-break: break-word; }
+  .contact-card .value a:hover { text-decoration: underline; }
+  .contact-card .note { font-size: 14px; color: var(--muted); }
+  .card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .btn-viber { background: var(--viber); border-color: var(--viber); color: #fff; }
+  .btn-viber:hover { background: var(--viber-dark); border-color: var(--viber-dark); color: #fff; }
+  .card-viber .glyph { background: #EDEAFD; }
+
+  /* Hours + map */
+  .info-row { display: grid; grid-template-columns: 1fr 1.2fr; gap: 16px; margin-bottom: 32px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  .panel h2 { font-size: 20px; margin-bottom: 14px; }
+  .hours { list-style: none; display: grid; gap: 10px; font-size: 15px; }
+  .hours li { display: flex; justify-content: space-between; gap: 14px; border-bottom: 1px dashed var(--line); padding-bottom: 8px; }
+  .hours li:last-child { border-bottom: none; padding-bottom: 0; }
+  .hours li span:last-child { font-weight: 700; }
+  .hours li.closed span:last-child { color: var(--muted); font-weight: 500; }
+  .hours-note { margin-top: 14px; background: var(--marigold-soft); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+
+  .map-panel { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+  .map-frame { width: 100%; height: 100%; min-height: 280px; border: 0; display: block; background: var(--marigold-soft); }
+  .map-foot { padding: 14px 18px; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .map-foot strong { font-size: 15px; }
+  .map-foot span { font-size: 13px; color: var(--muted); display: block; }
+
+  /* Message form */
+  .form-panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
+  .form-panel > p { color: var(--muted); font-size: 15px; margin-bottom: 18px; }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .field { display: grid; gap: 6px; }
+  .field label { font-size: 14px; font-weight: 700; }
+  .field input, .field textarea, .field select {
+    font-family: inherit; font-size: 15px; padding: 11px 13px;
+    border: 1.5px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
+  }
+  .field textarea { resize: vertical; min-height: 120px; }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--teal); outline: none; }
+  .form-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+  .send-btn {
+    border: none; background: var(--teal); color: #fff; padding: 13px 26px;
+    border-radius: 12px; font-weight: 700; font-size: 16px; transition: background 0.15s;
+  }
+  .send-btn:hover { background: var(--teal-dark); }
+  .send-viber {
+    border: 1.5px solid var(--viber); background: var(--viber); color: #fff;
+    padding: 13px 26px; border-radius: 12px; font-weight: 700; font-size: 16px; transition: background 0.15s;
+  }
+  .send-viber:hover { background: var(--viber-dark); border-color: var(--viber-dark); }
+  .form-hint { font-size: 13px; color: var(--muted); margin-top: 12px; }
+  .form-msg { display: none; margin-top: 14px; border-radius: 10px; padding: 12px 14px; font-size: 14px; font-weight: 500; }
+  .form-msg.show { display: block; }
+  .form-msg.ok { background: #E7F3EE; color: #1B6B4A; }
+  .form-msg.err { background: #FBE9E7; color: #A3271B; }
+
+  /* Footer */
+  footer { background: var(--ink); color: var(--paper); margin-top: 40px; }
+  .footer-inner { padding: 36px 0 28px; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 32px; }
+  .footer-inner h4 { font-family: 'Bricolage Grotesque', sans-serif; margin-bottom: 10px; font-size: 16px; }
+  .footer-inner ul { list-style: none; display: grid; gap: 8px; font-size: 14px; color: #B9C4C9; }
+  .footer-inner a:hover { color: var(--marigold); }
+  .footer-brand p { font-size: 14px; color: #B9C4C9; max-width: 34ch; }
+  .footer-bottom { border-top: 1px solid #33424B; padding: 14px 0; font-size: 13px; color: #8FA0A8; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  @media (max-width: 860px) {
+    nav.main { display: none; }
+    .contact-grid, .info-row, .field-grid { grid-template-columns: 1fr; }
+    .footer-inner { grid-template-columns: 1fr; gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap header-inner">
+    <a class="logo" href="index.html" aria-label="Surendra Stone Carving home">
+      <span class="logo-en">Surendra Stone Carving</span>
+      <span class="logo-np">पसल</span>
+    </a>
+    <nav class="main" aria-label="Main">
+      <a href="index.html#shop">Shop</a>
+      <a href="index.html#categories">Categories</a>
+      <a href="index.html#about">About</a>
+      <a href="pasal-contact.html" aria-current="page">Contact</a>
+    </nav>
+    <div class="header-actions" id="headerActions">
+      <a class="btn btn-solid" href="pasal-account.html">Log in</a>
+    </div>
+  </div>
+  <div class="bunting" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Get in touch</h1>
+      <p>Questions about an order, a custom carving, or delivery? Call us, message us on Viber, or drop by the workshop in Bhaktapur.</p>
+    </div>
+
+    <!-- Contact detail cards -->
+    <div class="contact-grid">
+      <div class="contact-card">
+        <div class="glyph" aria-hidden="true">📞</div>
+        <h2>Contact number</h2>
+        <div class="value"><a id="phoneLink" href="#">98XXXXXXXX</a></div>
+        <p class="note">Call us for orders, custom carving enquiries, or delivery updates.</p>
+        <div class="card-actions">
+          <a class="btn btn-solid" id="phoneCallBtn" href="#">Call now</a>
+        </div>
+      </div>
+
+      <div class="contact-card card-viber">
+        <div class="glyph" aria-hidden="true">💬</div>
+        <h2>Viber</h2>
+        <div class="value" id="viberNumber">98XXXXXXXX</div>
+        <p class="note">Fastest way to reach us. Send photos of the piece you want and we'll quote you.</p>
+        <div class="card-actions">
+          <a class="btn btn-viber" id="viberBtn" href="#">Chat on Viber</a>
+          <a class="btn" id="viberCopyBtn" href="#" onclick="copyNumber(event)">Copy number</a>
+        </div>
+      </div>
+
+      <div class="contact-card">
+        <div class="glyph" aria-hidden="true">✉️</div>
+        <h2>Email</h2>
+        <div class="value"><a id="emailLink" href="#">abc@gmail.com</a></div>
+        <p class="note">Best for bulk orders, wholesale enquiries, and detailed custom requests.</p>
+        <div class="card-actions">
+          <a class="btn btn-solid" id="emailBtn" href="#">Send an email</a>
+        </div>
+      </div>
+
+      <div class="contact-card">
+        <div class="glyph" aria-hidden="true">📍</div>
+        <h2>Shop location</h2>
+        <div class="value" id="locationName">Bhaktapur</div>
+        <p class="note" id="locationAddress">Bhaktapur, Kathmandu Valley, Nepal — visitors are welcome at the workshop.</p>
+        <div class="card-actions">
+          <a class="btn btn-solid" id="directionsBtn" href="#" target="_blank" rel="noopener">Get directions</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hours + map -->
+    <div class="info-row">
+      <div class="panel">
+        <h2>Opening hours</h2>
+        <ul class="hours">
+          <li><span>Sunday – Friday</span><span>9:00 am – 7:00 pm</span></li>
+          <li><span>Saturday</span><span>10:00 am – 4:00 pm</span></li>
+          <li class="closed"><span>Public holidays</span><span>By appointment</span></li>
+        </ul>
+        <div class="hours-note">Viber messages are answered outside shop hours too — we usually reply the same day.</div>
+      </div>
+
+      <div class="panel map-panel">
+        <iframe
+          class="map-frame"
+          title="Map showing the shop location in Bhaktapur"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          src="https://www.openstreetmap.org/export/embed.html?bbox=85.4130%2C27.6650%2C85.4460%2C27.6810&layer=mapnik&marker=27.6710%2C85.4298"></iframe>
+        <div class="map-foot">
+          <div>
+            <strong>Bhaktapur, Nepal</strong>
+            <span>Free delivery on orders over Rs 3,000 in Kathmandu Valley.</span>
+          </div>
+          <a class="btn" id="mapLinkBtn" href="#" target="_blank" rel="noopener">Open in Maps</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message form -->
+    <div class="form-panel">
+      <h2>Send us a message</h2>
+      <p>Fill this in and we'll get back to you by phone, Viber, or email — whichever you prefer.</p>
+
+      <div class="field-grid">
+        <div class="field">
+          <label for="cName">Your name</label>
+          <input type="text" id="cName" placeholder="e.g. Sita Shrestha" autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="cPhone">Phone number</label>
+          <input type="tel" id="cPhone" placeholder="98XXXXXXXX" autocomplete="tel">
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label for="cEmail">Email (optional)</label>
+          <input type="email" id="cEmail" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="cTopic">What is it about?</label>
+          <select id="cTopic">
+            <option>General enquiry</option>
+            <option>Order status</option>
+            <option>Custom carving request</option>
+            <option>Delivery or shipping</option>
+            <option>Return or exchange</option>
+            <option>Wholesale / bulk order</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="cMessage">Your message</label>
+        <textarea id="cMessage" placeholder="Tell us what you need — size, stone type, deadline, or your order number."></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button class="send-btn" onclick="sendByEmail()">Send by email</button>
+        <button class="send-viber" onclick="sendByViber()">Send on Viber</button>
+      </div>
+      <p class="form-hint">Both buttons open your own email app or Viber with the message ready — nothing is sent until you press send there.</p>
+      <div class="form-msg" id="formMsg" role="status"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <h4>Surendra Stone Carving · पसल</h4>
+      <p>A family stone carving workshop in Bhaktapur — statues, dharas, and household stoneware, hand-carved and delivered to your door.</p>
+    </div>
+    <div>
+      <h4>Store</h4>
+      <ul>
+        <li><a href="index.html#shop">Shop all</a></li>
+        <li><a href="index.html#categories">Categories</a></li>
+        <li><a href="index.html#about">About us</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Help</h4>
+      <ul>
+        <li><a href="pasal-contact.html">Contact us</a></li>
+        <li><a href="pasal-contact.html" id="footerViber">Contact on Viber</a></li>
+        <li><a href="pasal-contact.html">Shipping &amp; returns</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="wrap">© 2026 Surendra Stone Carving · Bhaktapur, Nepal</div>
+  </div>
+</footer>
+
+<script>
+  /* ==========================================================================
+     EDIT YOUR SHOP DETAILS HERE — everything on the page updates automatically.
+     ========================================================================== */
+  const SHOP = {
+    phone:        "98XXXXXXXX",                 // local number shown on the page
+    countryCode:  "977",                        // Nepal
+    email:        "abc@gmail.com",
+    locationName: "Bhaktapur",
+    address:      "Bhaktapur, Kathmandu Valley, Nepal",
+    mapQuery:     "Bhaktapur, Nepal"            // used for the "Get directions" link
+  };
+  /* ========================================================================== */
+
+  const digits = SHOP.phone.replace(/[^0-9]/g, "");
+  const intl = "+" + SHOP.countryCode + digits;          // e.g. +97798XXXXXXXX
+  const viberUrl = "viber://chat?number=" + encodeURIComponent(intl);
+  const mapUrl = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(SHOP.mapQuery);
+
+  // Fill in every detail from the SHOP object above
+  document.getElementById("phoneLink").textContent = SHOP.phone;
+  document.getElementById("phoneLink").href = "tel:" + intl;
+  document.getElementById("phoneCallBtn").href = "tel:" + intl;
+  document.getElementById("viberNumber").textContent = SHOP.phone;
+  document.getElementById("viberBtn").href = viberUrl;
+  document.getElementById("emailLink").textContent = SHOP.email;
+  document.getElementById("emailLink").href = "mailto:" + SHOP.email;
+  document.getElementById("emailBtn").href = "mailto:" + SHOP.email;
+  document.getElementById("locationName").textContent = SHOP.locationName;
+  document.getElementById("locationAddress").textContent = SHOP.address + " — visitors are welcome at the workshop.";
+  document.getElementById("directionsBtn").href = mapUrl;
+  document.getElementById("mapLinkBtn").href = mapUrl;
+  document.getElementById("footerViber").href = viberUrl;
+  document.title = "Contact us — Surendra Stone Carving";
+
+  function flash(text, ok) {
+    const box = document.getElementById("formMsg");
+    box.textContent = text;
+    box.className = "form-msg show " + (ok ? "ok" : "err");
+    clearTimeout(box._t);
+    box._t = setTimeout(() => box.classList.remove("show"), 6000);
+  }
+
+  function copyNumber(e) {
+    e.preventDefault();
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(intl)
+        .then(() => flash("Number " + intl + " copied to your clipboard.", true))
+        .catch(() => flash("Couldn't copy — our number is " + intl, false));
+    } else {
+      flash("Our number is " + intl, true);
+    }
+  }
+
+  function collect() {
+    const name = document.getElementById("cName").value.trim();
+    const phone = document.getElementById("cPhone").value.trim();
+    const email = document.getElementById("cEmail").value.trim();
+    const topic = document.getElementById("cTopic").value;
+    const message = document.getElementById("cMessage").value.trim();
+
+    if (!name || !message) {
+      flash("Please add your name and a short message first.", false);
+      return null;
+    }
+    const body =
+      "Name: " + name + "\n" +
+      "Phone: " + (phone || "—") + "\n" +
+      "Email: " + (email || "—") + "\n" +
+      "Topic: " + topic + "\n\n" +
+      message;
+    return { topic, body };
+  }
+
+  function sendByEmail() {
+    const data = collect();
+    if (!data) return;
+    window.location.href = "mailto:" + SHOP.email +
+      "?subject=" + encodeURIComponent("Website enquiry — " + data.topic) +
+      "&body=" + encodeURIComponent(data.body);
+    flash("Opening your email app with the message ready.", true);
+  }
+
+  function sendByViber() {
+    const data = collect();
+    if (!data) return;
+    if (navigator.clipboard) navigator.clipboard.writeText(data.body).catch(() => {});
+    window.location.href = viberUrl;
+    flash("Opening Viber — your message has been copied, just paste it in the chat.", true);
+  }
+
+  // Show the logged-in name in the header, same as the other pages
+  (function checkSession() {
+    try {
+      const session = JSON.parse(localStorage.getItem("pasal_session"));
+      if (session && session.name) {
+        document.getElementById("headerActions").innerHTML =
+          '<span style="font-weight:700; font-size:14px;">Namaste, ' + session.name.split(" ")[0] + '</span>' +
+          '<button class="btn" onclick="logout()">Log out</button>';
+      }
+    } catch (e) {}
+  })();
+
+  function logout() {
+    localStorage.removeItem("pasal_session");
+    window.location.reload();
+  }
+</script>
+
+</body>
+</html>

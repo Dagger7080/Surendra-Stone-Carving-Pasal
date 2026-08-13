@@ -137,6 +137,9 @@
   .trust-item { display: grid; gap: 4px; }
   .trust-item strong { font-size: 15px; }
   .trust-item span { font-size: 13px; color: var(--muted); }
+  .trust-link { transition: transform 0.15s; }
+  .trust-link:hover { transform: translateY(-2px); }
+  .trust-link:hover strong { color: var(--teal); }
 
   /* Footer */
   footer { background: var(--ink); color: var(--paper); margin-top: 40px; }
@@ -183,7 +186,7 @@
       <a href="#shop">Shop</a>
       <a href="#categories">Categories</a>
       <a href="#about">About</a>
-      <a href="#contact">Contact</a>
+      <a href="pasal-contact.html">Contact</a>
     </nav>
     <div class="header-actions" id="headerActions">
       <a class="btn" href="pasal-account.html">Log in</a>
@@ -271,10 +274,10 @@
           <strong>7-day returns</strong>
           <span>Changed your mind? We'll sort it out.</span>
         </div>
-        <div class="trust-item">
+        <a class="trust-item trust-link" href="pasal-contact.html">
           <strong>Viber support</strong>
-          <span>Message us for order help anytime.</span>
-        </div>
+          <span>Message us for order help anytime. →</span>
+        </a>
       </div>
     </div>
   </section>
@@ -297,9 +300,9 @@
     <div>
       <h4>Help</h4>
       <ul>
-        <li><a href="#">Shipping</a></li>
-        <li><a href="#">Returns</a></li>
-        <li><a href="#">Contact on Viber</a></li>
+        <li><a href="pasal-contact.html">Contact us</a></li>
+        <li><a href="pasal-contact.html" id="footerViber">Contact on Viber</a></li>
+        <li><a href="pasal-contact.html">Shipping &amp; returns</a></li>
       </ul>
     </div>
   </div>
@@ -369,6 +372,15 @@
   function goToCart() {
     window.location.href = "pasal-cart.html";
   }
+
+  // Footer "Contact on Viber" opens Viber directly; keep pasal-contact.html as fallback
+  const STORE_PHONE = "98XXXXXXXX";
+  (function wireViber() {
+    const link = document.getElementById("footerViber");
+    if (!link) return;
+    const intl = "+977" + STORE_PHONE.replace(/[^0-9]/g, "");
+    link.href = "viber://chat?number=" + encodeURIComponent(intl);
+  })();
 
   (function checkSession() {
     try {
