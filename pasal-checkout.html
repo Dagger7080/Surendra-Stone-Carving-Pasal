@@ -386,7 +386,23 @@
 </footer>
 
 <script>
-  const STORE_EMAIL = "sujip.shilakar@gmail.com";
+  /* --------------------------------------------------------------------------
+     WHERE ORDERS ARE SENT
+     FormSubmit gives every activated address a random form ID. Posting to that
+     ID works exactly like posting to the address, except the page source shows
+     a meaningless string instead of your inbox — which is the only real way to
+     keep the address out of the HTML on a static host.
+
+     To get it:
+       1. Place one test order with your address below.
+       2. Open the FormSubmit activation email and click the link.
+       3. That email also shows your form ID (a long random string).
+       4. Paste it into FORMSUBMIT_ID, then DELETE the address from STORE_EMAIL
+          (leave the empty quotes) and re-upload this file.
+     -------------------------------------------------------------------------- */
+  const FORMSUBMIT_ID = "";                          // e.g. "3f9a1c2b7e4d8..."
+  const STORE_EMAIL   = "sujip.shilakar@gmail.com";  // delete once FORMSUBMIT_ID is set
+  const FORM_TARGET   = FORMSUBMIT_ID || STORE_EMAIL;
   const STORE_PHONE = "98XXXXXXXX";
   const IMGBB_API_KEY = "YOUR_IMGBB_KEY";
 
@@ -691,11 +707,19 @@
        3. If the JSON request is blocked (CORS/preflight, ad blocker, flaky
           mobile network), we now retry through a hidden form + iframe, which is
           a plain browser POST and is not subject to CORS at all.
-     One-time setup: place a test order, open STORE_EMAIL's inbox, click the
+     One-time setup: place a test order, open the store inbox, click the
      FormSubmit activation link. After that every order is delivered.
   --------------------------------------------------------------------------- */
-  const FORM_ENDPOINT_AJAX  = "https://formsubmit.co/ajax/" + encodeURIComponent(STORE_EMAIL);
-  const FORM_ENDPOINT_PLAIN = "https://formsubmit.co/" + encodeURIComponent(STORE_EMAIL);
+  const FORM_ENDPOINT_AJAX  = "https://formsubmit.co/ajax/" + encodeURIComponent(FORM_TARGET);
+  const FORM_ENDPOINT_PLAIN = "https://formsubmit.co/" + encodeURIComponent(FORM_TARGET);
+
+  if (!FORMSUBMIT_ID) {
+    console.warn(
+      "[FormSubmit] No FORMSUBMIT_ID set, so the store email address is visible " +
+      "in this page's source. Activate the form, paste the form ID into " +
+      "FORMSUBMIT_ID, and clear STORE_EMAIL."
+    );
+  }
   const SEND_TIMEOUT_MS = 20000;
 
   function sendOrderEmail(name, phone, address, city, method, orderNo, itemList, screenshotLink, btn) {
@@ -725,7 +749,7 @@
         var msg = (data && data.message) ? String(data.message) : "no message";
         if (/activat|confirm/i.test(msg)) {
           console.error(
-            "[FormSubmit] Not activated yet for " + STORE_EMAIL + ". " +
+            "[FormSubmit] Not activated yet for " + (STORE_EMAIL || "this form ID") + ". " +
             "Open that inbox, click the FormSubmit activation link, then place one more test order. Server said: " + msg
           );
         } else {
