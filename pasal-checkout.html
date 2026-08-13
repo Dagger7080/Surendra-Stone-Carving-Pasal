@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout — Surendra Stone Carving</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Karla:wght@400;500;700&family=Mukta:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1E2A32;
+    --paper: #FAF7F0;
+    --teal: #16606B;
+    --teal-dark: #0E444D;
+    --marigold: #E8A020;
+    --marigold-soft: #FBEFD6;
+    --muted: #5C6B72;
+    --line: #E3DDD0;
+    --card: #FFFFFF;
+    --success: #2E8A57;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Karla', sans-serif; background: var(--paper); color: var(--ink); line-height: 1.6; }
+  h1, h2, h3 { font-family: 'Bricolage Grotesque', sans-serif; line-height: 1.15; }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+  header { background: var(--paper); position: sticky; top: 0; z-index: 10; }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; }
+  .logo { display: flex; align-items: baseline; gap: 8px; }
+  .logo-en { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+  .logo-np { font-family: 'Mukta', sans-serif; font-weight: 600; font-size: 16px; color: var(--teal); }
+  .steps { font-size: 14px; color: var(--muted); }
+  .steps strong { color: var(--teal); }
+
+  .bunting { display: flex; overflow: hidden; height: 14px; }
+  .bunting span { flex: 0 0 26px; height: 14px; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+  .bunting span:nth-child(5n+1) { background: #2E6BA8; }
+  .bunting span:nth-child(5n+2) { background: #FFFFFF; border: 1px solid var(--line); }
+  .bunting span:nth-child(5n+3) { background: #C93A2E; }
+  .bunting span:nth-child(5n+4) { background: #2E8A57; }
+  .bunting span:nth-child(5n+5) { background: var(--marigold); }
+
+  main { padding: 40px 0 60px; }
+  .page-head { margin-bottom: 26px; }
+  .page-head h1 { font-size: clamp(28px, 4vw, 38px); }
+
+  .checkout-layout { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; align-items: start; }
+
+  .panel {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 24px; margin-bottom: 18px;
+  }
+  .panel h2 { font-size: 20px; margin-bottom: 16px; }
+
+  .form-grid { display: grid; gap: 14px; }
+  .form-row { display: grid; gap: 6px; }
+  .form-row label { font-weight: 700; font-size: 14px; }
+  .form-row input, .form-row textarea {
+    font-family: inherit; font-size: 15px; padding: 11px 14px;
+    border: 1.5px solid var(--line); border-radius: 10px; background: #fff;
+  }
+  .form-row input:focus, .form-row textarea:focus { border-color: var(--teal); outline: none; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  .pay-option {
+    display: flex; align-items: flex-start; gap: 12px;
+    border: 1.5px solid var(--line); border-radius: 12px; padding: 14px 16px;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 10px;
+  }
+  .pay-option:has(input:checked) { border-color: var(--teal); background: #F2F7F7; }
+  .pay-option input { margin-top: 4px; accent-color: var(--teal); width: 18px; height: 18px; }
+  .pay-option .pay-text { display: grid; gap: 2px; }
+  .pay-option strong { font-size: 15px; }
+  .pay-option span { font-size: 13px; color: var(--muted); }
+
+  /* QR section */
+  .qr-section { display: none; margin-top: 16px; text-align: center; }
+  .qr-section.show { display: block; }
+  .qr-frame {
+    display: inline-block; background: #fff; border: 1.5px solid var(--line);
+    border-radius: 16px; padding: 18px; margin-bottom: 12px;
+  }
+  .qr-frame img { width: 240px; height: 240px; object-fit: contain; display: block; }
+  .qr-placeholder {
+    width: 240px; height: 240px; border-radius: 10px; background: var(--marigold-soft);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 20px; text-align: center;
+  }
+  .qr-placeholder .glyph { font-size: 40px; }
+  .qr-placeholder p { font-size: 13px; color: var(--ink); line-height: 1.5; }
+  .qr-placeholder code { background: #fff; border-radius: 6px; padding: 1px 6px; font-size: 12px; }
+  .qr-caption { font-size: 14px; color: var(--muted); max-width: 42ch; margin: 0 auto; }
+  .qr-caption strong { color: var(--ink); }
+
+  .upload-box { margin-top: 16px; }
+  .upload-btn {
+    background: var(--marigold); border: none; color: var(--ink);
+    padding: 12px 22px; border-radius: 999px; font-weight: 700; font-size: 15px;
+    transition: background 0.15s;
+  }
+  .upload-btn:hover { background: #d99417; }
+  .upload-preview { display: grid; justify-items: center; gap: 8px; margin-top: 12px; }
+  .upload-preview img {
+    max-width: 200px; max-height: 260px; border-radius: 12px;
+    border: 1.5px solid var(--line); display: block;
+  }
+  .upload-status { font-size: 13px; color: var(--success, #2E8A57); font-weight: 700; }
+  .upload-remove {
+    background: none; border: none; color: var(--muted); font-size: 13px;
+    font-weight: 700; text-decoration: underline; padding: 0;
+  }
+  .upload-remove:hover { color: var(--ink); }
+
+  .summary {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px; display: grid; gap: 12px; position: sticky; top: 90px;
+  }
+  .summary h2 { font-size: 20px; }
+  .sum-item { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); }
+  .sum-item span:first-child { max-width: 65%; }
+  .sum-row { display: flex; justify-content: space-between; font-size: 15px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .sum-total { font-size: 18px; font-weight: 700; }
+  .sum-total span:last-child { color: var(--teal); }
+  .place-btn {
+    border: none; background: var(--teal); color: #fff; padding: 14px;
+    border-radius: 12px; font-weight: 700; font-size: 16px; width: 100%;
+    transition: background 0.15s;
+  }
+  .place-btn:hover { background: var(--teal-dark); }
+  .back-link { text-align: center; font-size: 14px; font-weight: 700; color: var(--teal); }
+  .back-link:hover { text-decoration: underline; }
+
+  /* Success */
+  .success-panel {
+    display: none; background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 48px 28px; text-align: center;
+  }
+  .success-panel.show { display: block; }
+  .success-panel .tick {
+    width: 64px; height: 64px; border-radius: 50%; background: var(--success);
+    color: #fff; font-size: 32px; display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .success-panel h2 { font-size: 26px; margin-bottom: 8px; }
+  .success-panel p { color: var(--muted); max-width: 48ch; margin: 0 auto 8px; }
+  .success-panel .order-id { font-weight: 700; color: var(--teal); font-size: 15px; margin-bottom: 20px; }
+
+  .next-steps {
+    max-width: 480px; margin: 22px auto; display: grid; gap: 14px; text-align: left;
+  }
+  .step { display: flex; gap: 14px; align-items: flex-start; }
+  .step-num {
+    flex: none; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--marigold); color: var(--ink); font-weight: 700; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step strong { font-size: 15px; }
+  .step p { font-size: 14px; color: var(--muted); margin: 0; }
+
+  .contact-box {
+    background: var(--marigold-soft); border-radius: 14px; padding: 18px 20px;
+    max-width: 480px; margin: 0 auto 18px;
+  }
+  .contact-box p { font-size: 14px; color: var(--ink); margin: 0 0 10px; }
+  .contact-num {
+    display: inline-block; background: var(--ink); color: var(--paper);
+    padding: 10px 20px; border-radius: 999px; font-weight: 700; font-size: 15px;
+  }
+  .contact-num:hover { background: var(--teal); }
+
+  .closing-note { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+
+  .home-btn { display: inline-block; width: auto; padding: 13px 30px; }
+
+  footer { background: var(--ink); color: var(--paper); }
+  .footer-bottom { padding: 16px 0; font-size: 13px; color: #8FA0A8; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (max-width: 860px) {
+    .checkout-layout { grid-template-columns: 1fr; }
+    .summary { position: static; }
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap header-inner">
+    <a class="logo" href="pasal-homepage.html" aria-label="Surendra Stone Carving home">
+      <span class="logo-en">Surendra Stone Carving</span>
+      <span class="logo-np">पसल</span>
+    </a>
+    <span class="steps">Cart → <strong>Checkout</strong> → Done</span>
+  </div>
+  <div class="bunting" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Checkout</h1>
+    </div>
+
+    <div class="checkout-layout" id="checkoutLayout">
+      <div>
+        <div class="panel">
+          <h2>Delivery details</h2>
+          <div class="form-grid">
+            <div class="two-col">
+              <div class="form-row">
+                <label for="name">Full name</label>
+                <input id="name" type="text" placeholder="Sita Sharma">
+              </div>
+              <div class="form-row">
+                <label for="phone">Phone (WhatsApp preferred)</label>
+                <input id="phone" type="tel" placeholder="98XXXXXXXX">
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="address">Delivery address</label>
+              <textarea id="address" rows="2" placeholder="Tole, ward, landmark, city"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Payment method</h2>
+
+          <label class="pay-option">
+            <input type="radio" name="pay" value="cod" checked onchange="updatePayment()">
+            <span class="pay-text">
+              <strong>Cash on delivery</strong>
+              <span>Pay in cash when your order arrives.</span>
+            </span>
+          </label>
+
+          <label class="pay-option">
+            <input type="radio" name="pay" value="qr" onchange="updatePayment()">
+            <span class="pay-text">
+              <strong>Online Payment</strong>
+              <span>Scan our QR code and pay now from your wallet or mobile banking app.</span>
+            </span>
+          </label>
+
+          <div class="qr-section" id="qrSection">
+            <div class="qr-frame">
+              <img src="img/My QR.png" alt="Scan this QR code to pay" id="qrImage"
+                   onerror="this.style.display='none'; document.getElementById('qrPlaceholder').style.display='flex';">
+              <div class="qr-placeholder" id="qrPlaceholder" style="display:none;">
+                <span class="glyph" aria-hidden="true">🔳</span>
+                <p><strong>Your QR goes here.</strong><br>
+                Save your eSewa, Khalti, or bank QR image as <code>payment-qr.png</code> in the same folder as this page, and it will appear automatically.</p>
+              </div>
+            </div>
+            <p class="qr-caption">Scan with Mobile Banking App, Khalti, or Esewa.<Br> Pay <strong id="qrAmount">Rs 0</strong>, then upload your payment screenshot below and place your order.</p>
+
+            <div class="upload-box">
+              <input type="file" id="screenshotInput" accept="image/*" style="display:none" onchange="handleScreenshot(this.files[0])">
+              <button type="button" class="upload-btn" id="uploadBtn" onclick="document.getElementById('screenshotInput').click()">📷 Upload payment screenshot</button>
+              <div class="upload-preview" id="uploadPreview" style="display:none">
+                <img id="previewImg" alt="Your payment screenshot">
+                <p class="upload-status" id="uploadStatus"></p>
+                <button type="button" class="upload-remove" onclick="removeScreenshot()">Remove and upload again</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="summary" aria-label="Order summary">
+        <h2>Your order</h2>
+        <div id="summaryItems"></div>
+        <div class="sum-row"><span>Subtotal</span><span id="subtotal">Rs 0</span></div>
+        <div class="sum-row"><span>Delivery</span><span id="delivery">Rs 0</span></div>
+        <div class="sum-row sum-total"><span>Total</span><span id="total">Rs 0</span></div>
+        <button class="place-btn" onclick="placeOrder()">Place order</button>
+        <a class="back-link" href="pasal-cart.html">← Back to cart</a>
+      </aside>
+    </div>
+
+    <div class="success-panel" id="successPanel">
+      <div class="tick" aria-hidden="true">✓</div>
+      <h2>Thank you for placing your order!</h2>
+      <p class="order-id" id="orderId"></p>
+      <p id="successMsg">Your order has been received and is now with our team.</p>
+
+      <div class="next-steps" aria-label="What happens next">
+        <div class="step">
+          <span class="step-num">1</span>
+          <div>
+            <strong>We confirm</strong>
+            <p>Our team will contact you on WhatsApp shortly to confirm your order and delivery time.</p>
+          </div>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <div>
+            <strong>We pack</strong>
+            <p>Your items are carefully checked and packed for delivery.</p>
+          </div>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <div>
+            <strong>We deliver</strong>
+            <p>Your order arrives at your doorstep — inspect it before you pay if you chose cash on delivery.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-box">
+        <p>Please keep your phone nearby — we'll be in touch soon. Have a question in the meantime?</p>
+        <a class="contact-num" id="contactPhone" href="#">📞 Call or WhatsApp us</a>
+      </div>
+
+      <p class="closing-note">Thank you for trusting Surendra Stone Carving. We appreciate every order! 🙏</p>
+
+      <a class="place-btn home-btn" href="pasal-homepage.html">Continue shopping</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-bottom">
+    <div class="wrap">© 2026 Surendra Stone Carving · Kathmandu, Nepal</div>
+  </div>
+</footer>
+
+<script>
+  const STORE_EMAIL = "sujip.shilakar@gmail.com";
+  const STORE_PHONE = "98XXXXXXXX";
+  const IMGBB_API_KEY = "YOUR_IMGBB_KEY";
+
+  const FREE_DELIVERY_THRESHOLD = 3000;
+  const DELIVERY_FEE = 100;
+
+  const catalog = [
+    { name: "Silauto", price: 700 },
+    { name: "Shiva Linga", price: 350 },
+    { name: "Pashupatinath Idol", price: 2400 },
+    { name: "Surya", price: 1100 },
+    { name: "Ganesh Statue", price: 950 },
+    { name: "Kumar Statue", price: 450 },
+    { name: "Bhimshen Statue", price: 1800 },
+    { name: "Laxmi Statue", price: 550 }
+  ];
+
+  const fmt = n => "Rs " + n.toLocaleString("en-IN");
+
+  const CART_KEY = "pasal_cart";
+  let cart = [];
+  try {
+    const saved = JSON.parse(localStorage.getItem(CART_KEY)) || {};
+    Object.entries(saved).forEach(([i, q]) => {
+      i = Number(i); q = Number(q);
+      if (catalog[i] && q > 0) cart.push({ ...catalog[i], qty: q });
+    });
+  } catch (e) {}
+
+  let grandTotal = 0;
+
+  function renderSummary() {
+    const box = document.getElementById("summaryItems");
+    box.innerHTML = "";
+    if (cart.length === 0) {
+      box.innerHTML = '<p style="font-size:14px; color:var(--muted);">Your cart is empty — <a href="pasal-homepage.html#shop" style="color:var(--teal); font-weight:700;">go shopping</a> first.</p>';
+    }
+    let subtotal = 0;
+    cart.forEach(item => {
+      subtotal += item.price * item.qty;
+      const row = document.createElement("div");
+      row.className = "sum-item";
+      row.innerHTML = "<span>" + item.qty + " × " + item.name + "</span><span>" + fmt(item.price * item.qty) + "</span>";
+      box.appendChild(row);
+    });
+    const delivery = cart.length && subtotal < FREE_DELIVERY_THRESHOLD ? DELIVERY_FEE : 0;
+    grandTotal = subtotal + delivery;
+    document.getElementById("subtotal").textContent = fmt(subtotal);
+    document.getElementById("delivery").textContent = delivery === 0 ? (cart.length ? "Free" : "—") : fmt(delivery);
+    document.getElementById("total").textContent = fmt(grandTotal);
+    document.getElementById("qrAmount").textContent = fmt(grandTotal);
+  }
+
+  function updatePayment() {
+    const method = document.querySelector('input[name="pay"]:checked').value;
+    document.getElementById("qrSection").classList.toggle("show", method === "qr");
+  }
+
+  const MAX_UPLOAD_BYTES = 1000000;
+  let screenshotBlob = null;
+
+  function handleScreenshot(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { alert("Please choose an image file (a screenshot or photo)."); return; }
+    document.getElementById("uploadStatus").textContent = "Processing photo…";
+    document.getElementById("uploadStatus").style.color = "var(--muted)";
+    document.getElementById("uploadPreview").style.display = "grid";
+    document.getElementById("uploadBtn").style.display = "none";
+
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = function () {
+      URL.revokeObjectURL(url);
+      compressImage(img, 1600, 0.85);
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      alert("Couldn't read that image. Please try a different photo.");
+      removeScreenshot();
+    };
+    img.src = url;
+  }
+
+  function compressImage(img, maxDim, quality) {
+    const canvas = document.createElement("canvas");
+    let w = img.width, h = img.height;
+    if (w > maxDim || h > maxDim) {
+      const scale = maxDim / Math.max(w, h);
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+    }
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+    canvas.toBlob(function (blob) {
+      if (blob.size > MAX_UPLOAD_BYTES && (quality > 0.4 || maxDim > 800)) {
+        compressImage(img, quality > 0.4 ? maxDim : Math.round(maxDim * 0.8), quality > 0.4 ? quality - 0.15 : quality);
+        return;
+      }
+      screenshotBlob = blob;
+      document.getElementById("previewImg").src = URL.createObjectURL(blob);
+      const kb = Math.round(blob.size / 1024);
+      document.getElementById("uploadStatus").textContent = "✓ Screenshot attached (" + (kb >= 1024 ? (kb / 1024).toFixed(1) + " MB" : kb + " KB") + ")";
+      document.getElementById("uploadStatus").style.color = "#2E8A57";
+    }, "image/jpeg", quality);
+  }
+
+  function removeScreenshot() {
+    screenshotBlob = null;
+    document.getElementById("screenshotInput").value = "";
+    document.getElementById("uploadPreview").style.display = "none";
+    document.getElementById("uploadBtn").style.display = "inline-block";
+  }
+
+  function placeOrder() {
+    const name = document.getElementById("name").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const address = document.getElementById("address").value.trim();
+    if (cart.length === 0) { alert("Your cart is empty. Add some products first."); return; }
+    if (!name || !phone || !address) { alert("Please fill in your name, phone, and delivery address."); return; }
+
+    const method = document.querySelector('input[name="pay"]:checked').value;
+    if (method === "qr" && !screenshotBlob) {
+      alert("Please upload your payment screenshot so we can verify your payment, or choose cash on delivery instead.");
+      return;
+    }
+    const orderNo = "PSL-" + Math.floor(1000 + Math.random() * 9000);
+    const itemList = cart.map(it => it.qty + " x " + it.name + " (" + fmt(it.price * it.qty) + ")").join("\n");
+
+    const btn = document.querySelector(".place-btn");
+    btn.disabled = true;
+    btn.textContent = "Placing order…";
+
+    if (method === "qr" && screenshotBlob) {
+      btn.textContent = "Uploading screenshot…";
+      const imgData = new FormData();
+      imgData.append("image", screenshotBlob, "payment-screenshot-" + orderNo + ".jpg");
+      fetch("https://api.imgbb.com/1/upload?key=" + IMGBB_API_KEY, {
+        method: "POST",
+        body: imgData
+      })
+      .then(res => res.json())
+      .then(result => {
+        const link = (result && result.success && result.data && result.data.url)
+          ? result.data.url
+          : "Upload failed — ask customer to send the screenshot on WhatsApp";
+        sendOrderEmail(name, phone, address, method, orderNo, itemList, link, btn);
+      })
+      .catch(() => {
+        sendOrderEmail(name, phone, address, method, orderNo, itemList,
+          "Upload failed — ask customer to send the screenshot on WhatsApp", btn);
+      });
+    } else {
+      sendOrderEmail(name, phone, address, method, orderNo, itemList, null, btn);
+    }
+  }
+
+  function sendOrderEmail(name, phone, address, method, orderNo, itemList, screenshotLink, btn) {
+    btn.textContent = "Placing order…";
+    const fields = {
+      _subject: "New order " + orderNo + " — " + fmt(grandTotal),
+      "Order number": orderNo,
+      "Full name": name,
+      "Phone (WhatsApp)": phone,
+      "Delivery address": address,
+      "Payment method": method === "qr" ? "Online payment (QR)" : "Cash on delivery",
+      "Items": itemList,
+      "Total": fmt(grandTotal)
+    };
+    if (screenshotLink) {
+      fields["Payment screenshot (click to view)"] = screenshotLink;
+    }
+
+    fetch("https://formsubmit.co/ajax/" + STORE_EMAIL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(fields)
+    })
+    .then(res => res.json())
+    .then(() => showSuccess(method, orderNo))
+    .catch(() => {
+      alert("Couldn't send the order right now. Please check your internet connection and try again, or message us directly on WhatsApp.");
+      btn.disabled = false;
+      btn.textContent = "Place order";
+    });
+  }
+
+  function showSuccess(method, orderNo) {
+    localStorage.removeItem(CART_KEY);
+    document.getElementById("checkoutLayout").style.display = "none";
+    document.querySelector(".page-head").style.display = "none";
+    document.getElementById("orderId").textContent = "Order " + orderNo + " · Total " + fmt(grandTotal);
+    document.getElementById("successMsg").textContent = method === "qr"
+      ? "Your order and payment screenshot have been received. Our team will verify your payment and confirm your order on WhatsApp shortly."
+      : "Your order has been received. Please keep " + fmt(grandTotal) + " ready — you'll pay in cash when your order arrives at your door.";
+    const phoneLink = document.getElementById("contactPhone");
+    phoneLink.textContent = "📞 " + STORE_PHONE + " — Call or WhatsApp";
+    phoneLink.href = "https://wa.me/977" + STORE_PHONE.replace(/[^0-9]/g, "");
+    document.getElementById("successPanel").classList.add("show");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  renderSummary();
+  updatePayment();
+
+  (function prefillFromSession() {
+    try {
+      const session = JSON.parse(localStorage.getItem("pasal_session"));
+      if (session && session.name) {
+        document.getElementById("name").value = session.name;
+        if (session.phone) document.getElementById("phone").value = session.phone;
+      }
+    } catch (e) {}
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your cart — Surendra Stone Carving</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Karla:wght@400;500;700&family=Mukta:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1E2A32;
+    --paper: #FAF7F0;
+    --teal: #16606B;
+    --teal-dark: #0E444D;
+    --marigold: #E8A020;
+    --marigold-soft: #FBEFD6;
+    --muted: #5C6B72;
+    --line: #E3DDD0;
+    --card: #FFFFFF;
+    --danger: #C93A2E;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Karla', sans-serif; background: var(--paper); color: var(--ink); line-height: 1.6; }
+  h1, h2, h3 { font-family: 'Bricolage Grotesque', sans-serif; line-height: 1.15; }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+  header { background: var(--paper); position: sticky; top: 0; z-index: 10; }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; }
+  .logo { display: flex; align-items: baseline; gap: 8px; }
+  .logo-en { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+  .logo-np { font-family: 'Mukta', sans-serif; font-weight: 600; font-size: 16px; color: var(--teal); }
+  nav.main { display: flex; gap: 22px; font-weight: 500; font-size: 15px; }
+  nav.main a:hover { color: var(--teal); }
+  .btn {
+    border: 1.5px solid var(--ink); background: transparent; color: var(--ink);
+    padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 700;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn:hover { background: var(--ink); color: var(--paper); }
+  .btn-solid { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .btn-solid:hover { background: var(--teal-dark); border-color: var(--teal-dark); color: #fff; }
+
+  .bunting { display: flex; overflow: hidden; height: 14px; }
+  .bunting span { flex: 0 0 26px; height: 14px; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+  .bunting span:nth-child(5n+1) { background: #2E6BA8; }
+  .bunting span:nth-child(5n+2) { background: #FFFFFF; border: 1px solid var(--line); }
+  .bunting span:nth-child(5n+3) { background: #C93A2E; }
+  .bunting span:nth-child(5n+4) { background: #2E8A57; }
+  .bunting span:nth-child(5n+5) { background: var(--marigold); }
+
+  main { padding: 40px 0 60px; }
+  .page-head { margin-bottom: 26px; }
+  .page-head h1 { font-size: clamp(28px, 4vw, 38px); }
+  .page-head p { color: var(--muted); }
+
+  .cart-layout { display: grid; grid-template-columns: 1.7fr 1fr; gap: 28px; align-items: start; }
+
+  /* Cart items */
+  .cart-items { display: grid; gap: 14px; }
+  .cart-item {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px; display: grid; grid-template-columns: 72px 1fr auto; gap: 16px; align-items: center;
+  }
+  .item-img {
+    width: 72px; height: 72px; border-radius: 10px; background: var(--marigold-soft);
+    display: flex; align-items: center; justify-content: center; font-size: 30px;
+  }
+  .item-info { display: grid; gap: 2px; }
+  .item-name { font-weight: 700; font-size: 15px; }
+  .item-unit { font-size: 13px; color: var(--muted); }
+  .remove-btn {
+    background: none; border: none; color: var(--danger); font-size: 13px; font-weight: 700;
+    padding: 0; margin-top: 4px; justify-self: start;
+  }
+  .remove-btn:hover { text-decoration: underline; }
+  .item-right { display: grid; gap: 8px; justify-items: end; }
+  .item-total { font-weight: 700; color: var(--teal); font-size: 15px; }
+  .qty-row { display: flex; align-items: center; gap: 8px; }
+  .qty-btn {
+    width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid var(--line);
+    background: #fff; font-size: 16px; font-weight: 700; color: var(--ink);
+  }
+  .qty-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .qty-val { min-width: 22px; text-align: center; font-weight: 700; }
+
+  /* Empty state */
+  .empty {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 48px 24px; text-align: center; display: none;
+  }
+  .empty .glyph { font-size: 44px; margin-bottom: 10px; }
+  .empty h2 { font-size: 22px; margin-bottom: 6px; }
+  .empty p { color: var(--muted); margin-bottom: 18px; }
+
+  /* Summary */
+  .summary {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px; display: grid; gap: 14px; position: sticky; top: 90px;
+  }
+  .summary h2 { font-size: 20px; }
+  .sum-row { display: flex; justify-content: space-between; font-size: 15px; }
+  .sum-row span:last-child { font-weight: 700; }
+  .sum-row.muted { color: var(--muted); font-weight: 400; }
+  .sum-row.muted span:last-child { font-weight: 400; }
+  .sum-total { border-top: 1.5px solid var(--line); padding-top: 12px; font-size: 18px; }
+  .sum-total span:last-child { color: var(--teal); }
+  .free-note {
+    background: var(--marigold-soft); border-radius: 10px; padding: 10px 12px;
+    font-size: 13px; color: var(--ink);
+  }
+  .checkout-btn {
+    border: none; background: var(--teal); color: #fff; padding: 14px;
+    border-radius: 12px; font-weight: 700; font-size: 16px; width: 100%;
+    transition: background 0.15s;
+  }
+  .checkout-btn:hover { background: var(--teal-dark); }
+  .pay-methods { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+  .pay-methods strong { color: var(--ink); font-size: 13px; }
+  .continue-link { text-align: center; font-size: 14px; font-weight: 700; color: var(--teal); }
+  .continue-link:hover { text-decoration: underline; }
+
+  footer { background: var(--ink); color: var(--paper); }
+  .footer-bottom { padding: 16px 0; font-size: 13px; color: #8FA0A8; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  @media (max-width: 860px) {
+    nav.main { display: none; }
+    .cart-layout { grid-template-columns: 1fr; }
+    .summary { position: static; }
+  }
+  @media (max-width: 520px) {
+    .cart-item { grid-template-columns: 56px 1fr; }
+    .item-img { width: 56px; height: 56px; font-size: 24px; }
+    .item-right { grid-column: 1 / -1; grid-template-columns: auto auto; justify-content: space-between; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap header-inner">
+    <a class="logo" href="pasal-homepage.html" aria-label="Surendra Stone Carving home">
+      <span class="logo-en">Surendra Stone Carving</span>
+      <span class="logo-np">पसल</span>
+    </a>
+    <nav class="main" aria-label="Main">
+      <a href="pasal-homepage.html#shop">Shop</a>
+      <a href="pasal-homepage.html#categories">Categories</a>
+      <a href="pasal-homepage.html#about">About</a>
+      <a href="pasal-homepage.html#contact">Contact</a>
+    </nav>
+    <div class="header-actions" id="headerActions">
+      <a class="btn btn-solid" href="pasal-account.html">Log in</a>
+    </div>
+  </div>
+  <div class="bunting" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Your cart</h1>
+      <p id="itemSummary">3 items</p>
+    </div>
+
+    <div class="cart-layout">
+      <div>
+        <div class="cart-items" id="cartItems"></div>
+        <div class="empty" id="emptyState">
+          <div class="glyph" aria-hidden="true">🛒</div>
+          <h2>Your cart is empty</h2>
+          <p>Find something you'll love in the shop.</p>
+          <a class="btn btn-solid" href="pasal-homepage.html#shop">Start shopping</a>
+        </div>
+      </div>
+
+      <aside class="summary" id="summaryBox" aria-label="Order summary">
+        <h2>Order summary</h2>
+        <div class="sum-row muted"><span>Subtotal</span><span id="subtotal">Rs 0</span></div>
+        <div class="sum-row muted"><span>Delivery</span><span id="delivery">Rs 100</span></div>
+        <div class="free-note" id="freeNote">Add <strong id="freeGap">Rs 0</strong> more for free delivery in Kathmandu Valley.</div>
+        <div class="sum-row sum-total"><span>Total</span><span id="total">Rs 0</span></div>
+        <button class="checkout-btn" onclick="goToCheckout()">Proceed to checkout</button>
+        <div class="pay-methods">
+          <strong>Payment options at checkout</strong>
+          <span>Cash on delivery · eSewa · Khalti</span>
+        </div>
+        <a class="continue-link" href="pasal-homepage.html#shop">← Continue shopping</a>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-bottom">
+    <div class="wrap">© 2026 Surendra Stone Carving · Kathmandu, Nepal</div>
+  </div>
+</footer>
+
+<script>
+  const FREE_DELIVERY_THRESHOLD = 3000;
+  const DELIVERY_FEE = 100;
+
+  const catalog = [
+    { name: "Silauto", price: 700, glyph: "🪨" },
+    { name: "Shiva Linga", price: 350, glyph: "🔱" },
+    { name: "Pashupatinath Idol", price: 2400, glyph: "🛕" },
+    { name: "Surya", price: 1100, glyph: "☀️" },
+    { name: "Ganesh Statue", price: 950, glyph: "🐘" },
+    { name: "Kumar Statue", price: 450, glyph: "🦚" },
+    { name: "Bhimshen Statue", price: 1800, glyph: "🗿" },
+    { name: "Laxmi Statue", price: 550, glyph: "🪷" }
+  ];
+
+  const CART_KEY = "pasal_cart";
+  let cart = [];
+  try {
+    const saved = JSON.parse(localStorage.getItem(CART_KEY)) || {};
+    Object.entries(saved).forEach(([i, q]) => {
+      i = Number(i); q = Number(q);
+      if (catalog[i] && q > 0) {
+        cart.push({ index: i, name: catalog[i].name, price: catalog[i].price, glyph: catalog[i].glyph, qty: q });
+      }
+    });
+  } catch (e) {}
+
+  function saveCart() {
+    const obj = {};
+    cart.forEach(item => { obj[item.index] = item.qty; });
+    localStorage.setItem(CART_KEY, JSON.stringify(obj));
+  }
+
+  const fmt = n => "Rs " + n.toLocaleString("en-IN");
+
+  function render() {
+    const list = document.getElementById("cartItems");
+    const empty = document.getElementById("emptyState");
+    const summary = document.getElementById("summaryBox");
+    list.innerHTML = "";
+
+    if (cart.length === 0) {
+      empty.style.display = "block";
+      summary.style.display = "none";
+      document.getElementById("itemSummary").textContent = "0 items";
+      return;
+    }
+    empty.style.display = "none";
+    summary.style.display = "grid";
+
+    cart.forEach((item, i) => {
+      const row = document.createElement("div");
+      row.className = "cart-item";
+      row.innerHTML = `
+        <div class="item-img" aria-hidden="true">${item.glyph}</div>
+        <div class="item-info">
+          <span class="item-name">${item.name}</span>
+          <span class="item-unit">${fmt(item.price)} each</span>
+          <button class="remove-btn" onclick="removeItem(${i})">Remove</button>
+        </div>
+        <div class="item-right">
+          <span class="item-total">${fmt(item.price * item.qty)}</span>
+          <div class="qty-row">
+            <button class="qty-btn" aria-label="Decrease quantity of ${item.name}" onclick="changeQty(${i}, -1)">−</button>
+            <span class="qty-val">${item.qty}</span>
+            <button class="qty-btn" aria-label="Increase quantity of ${item.name}" onclick="changeQty(${i}, 1)">+</button>
+          </div>
+        </div>`;
+      list.appendChild(row);
+    });
+
+    const count = cart.reduce((s, it) => s + it.qty, 0);
+    const subtotal = cart.reduce((s, it) => s + it.price * it.qty, 0);
+    const delivery = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+    const total = subtotal + delivery;
+
+    document.getElementById("itemSummary").textContent = count + (count === 1 ? " item" : " items");
+    document.getElementById("subtotal").textContent = fmt(subtotal);
+    document.getElementById("delivery").textContent = delivery === 0 ? "Free" : fmt(delivery);
+    document.getElementById("total").textContent = fmt(total);
+
+    const note = document.getElementById("freeNote");
+    if (delivery === 0) {
+      note.textContent = "You've unlocked free delivery in Kathmandu Valley!";
+    } else {
+      note.innerHTML = "Add <strong>" + fmt(FREE_DELIVERY_THRESHOLD - subtotal) + "</strong> more for free delivery in Kathmandu Valley.";
+    }
+  }
+
+  function changeQty(i, d) {
+    cart[i].qty = Math.max(1, cart[i].qty + d);
+    saveCart();
+    render();
+  }
+
+  function removeItem(i) {
+    cart.splice(i, 1);
+    saveCart();
+    render();
+  }
+
+  function goToCheckout() {
+    if (cart.length === 0) return;
+    saveCart();
+    window.location.href = "pasal-checkout.html";
+  }
+
+  render();
+
+  (function checkSession() {
+    try {
+      const session = JSON.parse(localStorage.getItem("pasal_session"));
+      if (session && session.name) {
+        document.getElementById("headerActions").innerHTML =
+          '<span style="font-weight:700; font-size:14px;">Namaste, ' + session.name.split(" ")[0] + '</span>' +
+          '<button class="btn" onclick="logout()">Log out</button>';
+      }
+    } catch (e) {}
+  })();
+
+  function logout() {
+    localStorage.removeItem("pasal_session");
+    window.location.reload();
+  }
+</script>
+
+</body>
+</html>
