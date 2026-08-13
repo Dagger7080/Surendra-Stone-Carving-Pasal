@@ -394,11 +394,11 @@
      keep the address out of the HTML on a static host.
 
      To get it:
-       1. Place one test order with your address below.
+       1. Place one test order on the live site.
        2. Open the FormSubmit activation email and click the link.
        3. That email also shows your form ID (a long random string).
-       4. Paste it into FORMSUBMIT_ID, then DELETE the address from STORE_EMAIL
-          (leave the empty quotes) and re-upload this file.
+       4. Paste it into FORMSUBMIT_ID below and re-upload this file. The encoded
+          fallback below then stops being used entirely.
      -------------------------------------------------------------------------- */
   const FORMSUBMIT_ID = "";   // <- paste your FormSubmit form ID here, then this file has no address in it at all
 
