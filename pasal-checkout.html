@@ -6,35 +6,45 @@
 <title>Checkout — Surendra Stone Carving</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Karla:wght@400;500;700&family=Mukta:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Karla:wght@400;500;700&family=Mukta:wght@600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #1E2A32;
-    --paper: #FAF7F0;
-    --teal: #16606B;
-    --teal-dark: #0E444D;
-    --marigold: #E8A020;
-    --marigold-soft: #FBEFD6;
-    --muted: #5C6B72;
-    --line: #E3DDD0;
-    --card: #FFFFFF;
-    --success: #2E8A57;
-    --danger: #C93A2E;
-    --danger-soft: #FDF2F0;
+    --ink: #2A2420;
+    --paper: #E8DFC8;
+    --teal: #8B4226;
+    --teal-dark: #6B3019;
+    --marigold: #A9812C;
+    --marigold-soft: #EFE4C4;
+    --muted: #6E6255;
+    --line: #D8CAAE;
+    --card: #F7F1E2;
+    --success: #4C7A4F;
+    --danger: #A8402B;
+    --danger-soft: #F3E4DC;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Karla', sans-serif; background: var(--paper); color: var(--ink); line-height: 1.6; }
-  h1, h2, h3 { font-family: 'Bricolage Grotesque', sans-serif; line-height: 1.15; }
+  body {
+    font-family: 'Karla', sans-serif;
+    background:
+      radial-gradient(ellipse 600px 400px at 12% 18%, rgba(42,36,32,0.05), transparent 60%),
+      radial-gradient(ellipse 500px 350px at 88% 12%, rgba(42,36,32,0.045), transparent 55%),
+      radial-gradient(ellipse 700px 500px at 50% 92%, rgba(255,255,255,0.4), transparent 60%),
+      radial-gradient(ellipse 450px 380px at 75% 55%, rgba(42,36,32,0.035), transparent 55%),
+      radial-gradient(ellipse 400px 300px at 25% 70%, rgba(42,36,32,0.03), transparent 55%),
+      var(--paper);
+    color: var(--ink); line-height: 1.6;
+  }
+  h1, h2, h3 { font-family: 'Cinzel', serif; letter-spacing: 0.3px; line-height: 1.2; }
   a { color: inherit; text-decoration: none; }
   button { font-family: inherit; cursor: pointer; }
   :focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; }
 
   .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
 
-  header { background: var(--paper); position: sticky; top: 0; z-index: 10; }
+  header { background: var(--paper); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
   .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; }
   .logo { display: flex; align-items: baseline; gap: 8px; }
-  .logo-en { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+  .logo-en { font-family: 'Cinzel', serif; font-weight: 700; font-size: 18px; letter-spacing: 0.5px; }
   .logo-np { font-family: 'Mukta', sans-serif; font-weight: 600; font-size: 16px; color: var(--teal); }
   .steps { font-size: 14px; color: var(--muted); }
   .steps strong { color: var(--teal); }
@@ -54,7 +64,7 @@
   .checkout-layout { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; align-items: start; }
 
   .panel {
-    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
     padding: 24px; margin-bottom: 18px;
   }
   .panel h2 { font-size: 20px; margin-bottom: 16px; }
@@ -68,7 +78,7 @@
     color: var(--ink);
   }
   .form-row select { appearance: none; cursor: pointer; padding-right: 40px;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%235C6B72' stroke-width='2' stroke-linecap='round'/></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%236E6255' stroke-width='2' stroke-linecap='round'/></svg>");
     background-repeat: no-repeat; background-position: right 14px center;
   }
   .form-row input:focus, .form-row textarea:focus, .form-row select:focus { border-color: var(--teal); outline: none; }
@@ -84,7 +94,7 @@
     background: var(--danger-soft); color: var(--danger);
     border: 2px solid var(--danger);
   }
-  .upload-btn.invalid:hover { background: #F9E3E0; }
+  .upload-btn.invalid:hover { background: #EBD3C6; }
   .field-note {
     display: none; font-size: 13px; font-weight: 700; color: var(--danger);
   }
@@ -111,7 +121,7 @@
   .qr-section.show { display: block; }
   .qr-frame {
     display: inline-block; background: #fff; border: 1.5px solid var(--line);
-    border-radius: 16px; padding: 18px; margin-bottom: 12px;
+    border-radius: 12px; padding: 18px; margin-bottom: 12px;
   }
   .qr-frame img { width: 240px; height: 240px; object-fit: contain; display: block; }
   .qr-placeholder {
@@ -128,16 +138,16 @@
   .upload-box { margin-top: 16px; }
   .upload-btn {
     background: var(--marigold); border: none; color: var(--ink);
-    padding: 12px 22px; border-radius: 999px; font-weight: 700; font-size: 15px;
+    padding: 12px 22px; border-radius: 8px; font-weight: 700; font-size: 15px;
     transition: background 0.15s;
   }
-  .upload-btn:hover { background: #d99417; }
+  .upload-btn:hover { background: #8A6A22; }
   .upload-preview { display: grid; justify-items: center; gap: 8px; margin-top: 12px; }
   .upload-preview img {
     max-width: 200px; max-height: 260px; border-radius: 12px;
     border: 1.5px solid var(--line); display: block;
   }
-  .upload-status { font-size: 13px; color: var(--success, #2E8A57); font-weight: 700; }
+  .upload-status { font-size: 13px; color: var(--success, #4C7A4F); font-weight: 700; }
   .upload-remove {
     background: none; border: none; color: var(--muted); font-size: 13px;
     font-weight: 700; text-decoration: underline; padding: 0;
@@ -145,7 +155,7 @@
   .upload-remove:hover { color: var(--ink); }
 
   .summary {
-    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
     padding: 22px; display: grid; gap: 12px; position: sticky; top: 90px;
   }
   .summary h2 { font-size: 20px; }
@@ -166,7 +176,7 @@
   /* Success */
   .success-panel {
     display: none; background: var(--card); border: 1px solid var(--line);
-    border-radius: 14px; padding: 48px 28px; text-align: center;
+    border-radius: 10px; padding: 48px 28px; text-align: center;
   }
   .success-panel.show { display: block; }
   .success-panel .tick {
@@ -191,13 +201,13 @@
   .step p { font-size: 14px; color: var(--muted); margin: 0; }
 
   .contact-box {
-    background: var(--marigold-soft); border-radius: 14px; padding: 18px 20px;
+    background: var(--marigold-soft); border-radius: 10px; padding: 18px 20px;
     max-width: 480px; margin: 0 auto 18px;
   }
   .contact-box p { font-size: 14px; color: var(--ink); margin: 0 0 10px; }
   .contact-num {
     display: inline-block; background: var(--ink); color: var(--paper);
-    padding: 10px 20px; border-radius: 999px; font-weight: 700; font-size: 15px;
+    padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 15px;
   }
   .contact-num:hover { background: var(--teal); }
 
@@ -206,7 +216,7 @@
   .home-btn { display: inline-block; width: auto; padding: 13px 30px; }
 
   footer { background: var(--ink); color: var(--paper); }
-  .footer-bottom { padding: 16px 0; font-size: 13px; color: #8FA0A8; }
+  .footer-bottom { padding: 16px 0; font-size: 13px; color: #9C8F76; }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   @media (max-width: 860px) {
@@ -418,7 +428,6 @@
 
   const FORM_TARGET = FORMSUBMIT_ID || STORE_EMAIL;
   const STORE_PHONE = "98XXXXXXXX";
-  const IMGBB_API_KEY = "YOUR_IMGBB_KEY";
 
   /* Order numbering — sequential, not random.
      ORDER_START_AT is the number the very first order gets. If you have already
@@ -552,7 +561,7 @@
       document.getElementById("previewImg").src = URL.createObjectURL(blob);
       const kb = Math.round(blob.size / 1024);
       document.getElementById("uploadStatus").textContent = "✓ Screenshot attached (" + (kb >= 1024 ? (kb / 1024).toFixed(1) + " MB" : kb + " KB") + ")";
-      document.getElementById("uploadStatus").style.color = "#2E8A57";
+      document.getElementById("uploadStatus").style.color = "#4C7A4F";
     }, "image/jpeg", quality);
   }
 
@@ -707,36 +716,12 @@
     btn.disabled = true;
     btn.textContent = "Placing order…";
 
-    const canUploadImage = IMGBB_API_KEY && IMGBB_API_KEY !== "YOUR_IMGBB_KEY";
-    if (method === "qr" && screenshotBlob && !canUploadImage) {
-      console.warn("[imgbb] IMGBB_API_KEY is still a placeholder — sending the order without the screenshot link.");
-    }
-
-    if (method === "qr" && screenshotBlob && canUploadImage) {
-      btn.textContent = "Uploading screenshot…";
-      const imgData = new FormData();
-      imgData.append("image", screenshotBlob, "payment-screenshot-" + orderNo + ".jpg");
-      fetch("https://api.imgbb.com/1/upload?key=" + IMGBB_API_KEY, {
-        method: "POST",
-        body: imgData
-      })
-      .then(res => res.json())
-      .then(result => {
-        const link = (result && result.success && result.data && result.data.url)
-          ? result.data.url
-          : "Upload failed — ask customer to send the screenshot on Viber";
-        sendOrderEmail(name, phone, address, city, method, orderNo, itemList, link, btn);
-      })
-      .catch(() => {
-        sendOrderEmail(name, phone, address, city, method, orderNo, itemList,
-          "Upload failed — ask customer to send the screenshot on Viber", btn);
-      });
-    } else {
-      const note = (method === "qr" && screenshotBlob)
-        ? "Customer attached a screenshot but image hosting is not configured — ask for it on Viber"
-        : null;
-      sendOrderEmail(name, phone, address, city, method, orderNo, itemList, note, btn);
-    }
+    // The compressed screenshot rides along as a real file attachment on the
+    // order email — see sendOrderEmail below. No third-party image host needed.
+    const attachment = (method === "qr" && screenshotBlob)
+      ? { blob: screenshotBlob, filename: "payment-screenshot-" + orderNo + ".jpg" }
+      : null;
+    sendOrderEmail(name, phone, address, city, method, orderNo, itemList, attachment, btn);
   }
 
   /* ---------------------------------------------------------------------------
@@ -748,11 +733,22 @@
           the customer saw "order placed" while no email ever arrived.
        2. Without _captcha:"false" FormSubmit parks the message behind a captcha
           page that an AJAX request can never complete.
-       3. If the JSON request is blocked (CORS/preflight, ad blocker, flaky
-          mobile network), we now retry through a hidden form + iframe, which is
-          a plain browser POST and is not subject to CORS at all.
+       3. If the request is blocked (CORS/preflight, ad blocker, flaky mobile
+          network), we retry through a hidden form + iframe, which is a plain
+          browser POST and is not subject to CORS at all.
      One-time setup: place a test order, open the store inbox, click the
      FormSubmit activation link. After that every order is delivered.
+
+     Payment screenshot: FormSubmit's /ajax/ endpoint happily accepts a
+     multipart body and reports success, but it silently drops any file
+     field — the order arrives with the "Payment_screenshot" text label and
+     no picture, which is exactly the symptom this comment is here to explain
+     if it comes back. Real file attachments only make it through as a
+     genuine <form> submission (enctype="multipart/form-data") to the PLAIN
+     endpoint — so whenever there's a screenshot, we skip the AJAX call
+     entirely and go straight to postOrderHiddenForm below, which builds a
+     real file input from the in-memory blob and does an actual form.submit().
+     Orders with no screenshot still use the faster AJAX path.
   --------------------------------------------------------------------------- */
   const FORM_ENDPOINT_AJAX  = "https://formsubmit.co/ajax/" + encodeURIComponent(FORM_TARGET);
   const FORM_ENDPOINT_PLAIN = "https://formsubmit.co/" + encodeURIComponent(FORM_TARGET);
@@ -766,7 +762,7 @@
   }
   const SEND_TIMEOUT_MS = 20000;
 
-  function sendOrderEmail(name, phone, address, city, method, orderNo, itemList, screenshotLink, btn) {
+  function sendOrderEmail(name, phone, address, city, method, orderNo, itemList, attachment, btn) {
     btn.textContent = "Placing order…";
 
     const fields = {
@@ -782,9 +778,21 @@
       Items: itemList,
       Total: fmt(grandTotal)
     };
-    if (screenshotLink) fields.Payment_screenshot = screenshotLink;
+    if (attachment) fields.Payment_screenshot = "See attached photo";
 
-    postOrderJSON(fields)
+    // Attachments: the AJAX endpoint won't deliver the file, so go straight
+    // to the real-form path that does. No AJAX attempt, no double emails.
+    if (attachment) {
+      postOrderHiddenForm(fields, attachment)
+        .then(function () { showSuccess(method, orderNo); })
+        .catch(function (err) {
+          console.error("[FormSubmit] Attachment submit failed:", err);
+          orderFailed(btn);
+        });
+      return;
+    }
+
+    postOrderMultipart(fields, null)
       .then(function (data) {
         if (data && String(data.success).toLowerCase() === "true") {
           showSuccess(method, orderNo);
@@ -803,7 +811,7 @@
       })
       .catch(function (err) {
         console.warn("[FormSubmit] AJAX submit failed, retrying with hidden form:", err);
-        postOrderHiddenForm(fields)
+        postOrderHiddenForm(fields, null)
           .then(function () { showSuccess(method, orderNo); })
           .catch(function (err2) {
             console.error("[FormSubmit] Hidden-form submit also failed:", err2);
@@ -812,15 +820,22 @@
       });
   }
 
-  /* Primary path: JSON -> /ajax/ endpoint, with a real response check. */
-  function postOrderJSON(fields) {
+  /* Primary path for orders with no attachment: FormData -> /ajax/ endpoint,
+     with a real response check (fast, gives an explicit success/failure).
+     Orders WITH a screenshot skip this entirely — see the note above
+     sendOrderEmail — so `attachment` here is always null; the parameter is
+     kept only so this and postOrderHiddenForm share the same shape. */
+  function postOrderMultipart(fields, attachment) {
     var controller = ("AbortController" in window) ? new AbortController() : null;
     var timer = controller ? setTimeout(function () { controller.abort(); }, SEND_TIMEOUT_MS) : null;
-    var opts = {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify(fields)
-    };
+
+    var body = new FormData();
+    Object.keys(fields).forEach(function (key) { body.append(key, fields[key]); });
+    if (attachment) body.append("attachment", attachment.blob, attachment.filename);
+
+    // Do not set Content-Type manually — the browser adds the multipart
+    // boundary itself; overriding it breaks the upload.
+    var opts = { method: "POST", headers: { "Accept": "application/json" }, body: body };
     if (controller) opts.signal = controller.signal;
 
     return fetch(FORM_ENDPOINT_AJAX, opts)
@@ -841,8 +856,11 @@
       });
   }
 
-  /* Fallback path: hidden form posted into a hidden iframe. No CORS involved. */
-  function postOrderHiddenForm(fields) {
+  /* Fallback path: hidden form posted into a hidden iframe. No CORS involved.
+     multipart/form-data enctype so the attachment (if any) still rides along
+     as a real file, using DataTransfer to hand the in-memory blob to a real
+     file input (a file input's FileList can't be set any other way). */
+  function postOrderHiddenForm(fields, attachment) {
     return new Promise(function (resolve, reject) {
       if (navigator.onLine === false) {
         reject(new Error("device is offline"));
@@ -859,6 +877,7 @@
       var form = document.createElement("form");
       form.action = FORM_ENDPOINT_PLAIN;
       form.method = "POST";
+      form.enctype = "multipart/form-data";
       form.target = frameName;
       form.acceptCharset = "UTF-8";
       form.style.display = "none";
@@ -870,6 +889,23 @@
         field.value = fields[key];
         form.appendChild(field);
       });
+
+      if (attachment && "DataTransfer" in window) {
+        try {
+          var fileInput = document.createElement("input");
+          fileInput.type = "file";
+          fileInput.name = "attachment";
+          fileInput.style.display = "none";
+          var dt = new DataTransfer();
+          dt.items.add(new File([attachment.blob], attachment.filename, { type: attachment.blob.type || "image/jpeg" }));
+          fileInput.files = dt.files;
+          form.appendChild(fileInput);
+        } catch (e) {
+          // Older browsers can't build a FileList this way — the order still
+          // sends on this retry path, just without the photo attached.
+        }
+      }
+
       document.body.appendChild(form);
 
       var settled = false;

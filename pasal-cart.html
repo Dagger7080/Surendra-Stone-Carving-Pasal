@@ -6,39 +6,49 @@
 <title>Your cart — Surendra Stone Carving</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Karla:wght@400;500;700&family=Mukta:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Karla:wght@400;500;700&family=Mukta:wght@600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #1E2A32;
-    --paper: #FAF7F0;
-    --teal: #16606B;
-    --teal-dark: #0E444D;
-    --marigold: #E8A020;
-    --marigold-soft: #FBEFD6;
-    --muted: #5C6B72;
-    --line: #E3DDD0;
-    --card: #FFFFFF;
-    --danger: #C93A2E;
+    --ink: #2A2420;
+    --paper: #E8DFC8;
+    --teal: #8B4226;
+    --teal-dark: #6B3019;
+    --marigold: #A9812C;
+    --marigold-soft: #EFE4C4;
+    --muted: #6E6255;
+    --line: #D8CAAE;
+    --card: #F7F1E2;
+    --danger: #A8402B;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Karla', sans-serif; background: var(--paper); color: var(--ink); line-height: 1.6; }
-  h1, h2, h3 { font-family: 'Bricolage Grotesque', sans-serif; line-height: 1.15; }
+  body {
+    font-family: 'Karla', sans-serif;
+    background:
+      radial-gradient(ellipse 600px 400px at 12% 18%, rgba(42,36,32,0.05), transparent 60%),
+      radial-gradient(ellipse 500px 350px at 88% 12%, rgba(42,36,32,0.045), transparent 55%),
+      radial-gradient(ellipse 700px 500px at 50% 92%, rgba(255,255,255,0.4), transparent 60%),
+      radial-gradient(ellipse 450px 380px at 75% 55%, rgba(42,36,32,0.035), transparent 55%),
+      radial-gradient(ellipse 400px 300px at 25% 70%, rgba(42,36,32,0.03), transparent 55%),
+      var(--paper);
+    color: var(--ink); line-height: 1.6;
+  }
+  h1, h2, h3 { font-family: 'Cinzel', serif; letter-spacing: 0.3px; line-height: 1.2; }
   a { color: inherit; text-decoration: none; }
   button { font-family: inherit; cursor: pointer; }
   :focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; }
 
   .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
 
-  header { background: var(--paper); position: sticky; top: 0; z-index: 10; }
+  header { background: var(--paper); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
   .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; }
   .logo { display: flex; align-items: baseline; gap: 8px; }
-  .logo-en { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+  .logo-en { font-family: 'Cinzel', serif; font-weight: 700; font-size: 18px; letter-spacing: 0.5px; }
   .logo-np { font-family: 'Mukta', sans-serif; font-weight: 600; font-size: 16px; color: var(--teal); }
   nav.main { display: flex; gap: 22px; font-weight: 500; font-size: 15px; }
   nav.main a:hover { color: var(--teal); }
   .btn {
     border: 1.5px solid var(--ink); background: transparent; color: var(--ink);
-    padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 700;
+    padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 700;
     transition: background 0.15s, color 0.15s;
   }
   .btn:hover { background: var(--ink); color: var(--paper); }
@@ -63,7 +73,7 @@
   /* Cart items */
   .cart-items { display: grid; gap: 14px; }
   .cart-item {
-    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
     padding: 16px; display: grid; grid-template-columns: 72px 1fr auto; gap: 16px; align-items: center;
   }
   .item-img {
@@ -90,7 +100,7 @@
 
   /* Empty state */
   .empty {
-    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
     padding: 48px 24px; text-align: center; display: none;
   }
   .empty .glyph { font-size: 44px; margin-bottom: 10px; }
@@ -99,7 +109,7 @@
 
   /* Summary */
   .summary {
-    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
     padding: 22px; display: grid; gap: 14px; position: sticky; top: 90px;
   }
   .summary h2 { font-size: 20px; }
@@ -125,7 +135,7 @@
   .continue-link:hover { text-decoration: underline; }
 
   footer { background: var(--ink); color: var(--paper); }
-  .footer-bottom { padding: 16px 0; font-size: 13px; color: #8FA0A8; }
+  .footer-bottom { padding: 16px 0; font-size: 13px; color: #9C8F76; }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
