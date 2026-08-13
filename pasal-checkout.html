@@ -19,6 +19,8 @@
     --line: #E3DDD0;
     --card: #FFFFFF;
     --success: #2E8A57;
+    --danger: #C93A2E;
+    --danger-soft: #FDF2F0;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Karla', sans-serif; background: var(--paper); color: var(--ink); line-height: 1.6; }
@@ -60,11 +62,37 @@
   .form-grid { display: grid; gap: 14px; }
   .form-row { display: grid; gap: 6px; }
   .form-row label { font-weight: 700; font-size: 14px; }
-  .form-row input, .form-row textarea {
+  .form-row input, .form-row textarea, .form-row select {
     font-family: inherit; font-size: 15px; padding: 11px 14px;
     border: 1.5px solid var(--line); border-radius: 10px; background: #fff;
+    color: var(--ink);
   }
-  .form-row input:focus, .form-row textarea:focus { border-color: var(--teal); outline: none; }
+  .form-row select { appearance: none; cursor: pointer; padding-right: 40px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%235C6B72' stroke-width='2' stroke-linecap='round'/></svg>");
+    background-repeat: no-repeat; background-position: right 14px center;
+  }
+  .form-row input:focus, .form-row textarea:focus, .form-row select:focus { border-color: var(--teal); outline: none; }
+
+  /* Inline validation — a red box instead of a popup */
+  .form-row input.invalid, .form-row textarea.invalid, .form-row select.invalid {
+    border-color: var(--danger); background-color: var(--danger-soft);
+  }
+  .form-row input.invalid:focus, .form-row textarea.invalid:focus,
+  .form-row select.invalid:focus { border-color: var(--danger); }
+  .form-row label.invalid { color: var(--danger); }
+  .upload-btn.invalid {
+    background: var(--danger-soft); color: var(--danger);
+    border: 2px solid var(--danger);
+  }
+  .upload-btn.invalid:hover { background: #F9E3E0; }
+  .field-note {
+    display: none; font-size: 13px; font-weight: 700; color: var(--danger);
+  }
+  .field-note.show { display: block; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
   .pay-option {
@@ -230,8 +258,20 @@
               </div>
               <div class="form-row">
                 <label for="phone">Phone (WhatsApp preferred)</label>
-                <input id="phone" type="tel" placeholder="98XXXXXXXX">
+                <input id="phone" type="tel" inputmode="numeric" autocomplete="tel"
+                       maxlength="14" placeholder="98XXXXXXXX"
+                       aria-describedby="phoneNote">
+                <p class="field-note" id="phoneNote">Enter a 10-digit mobile number.</p>
               </div>
+            </div>
+            <div class="form-row">
+              <label for="city">District</label>
+              <select id="city">
+                <option value="">Select your district</option>
+                <option value="Kathmandu">Kathmandu</option>
+                <option value="Bhaktapur">Bhaktapur</option>
+                <option value="Lalitpur">Lalitpur</option>
+              </select>
             </div>
             <div class="form-row">
               <label for="address">Delivery address</label>
@@ -271,7 +311,7 @@
             </div>
             <p class="qr-caption">Scan with Mobile Banking App, Khalti, or Esewa.<Br> Pay <strong id="qrAmount">Rs 0</strong>, then upload your payment screenshot below and place your order.</p>
 
-            <div class="upload-box">
+            <div class="upload-box" id="uploadBox">
               <input type="file" id="screenshotInput" accept="image/*" style="display:none" onchange="handleScreenshot(this.files[0])">
               <button type="button" class="upload-btn" id="uploadBtn" onclick="document.getElementById('screenshotInput').click()">📷 Upload payment screenshot</button>
               <div class="upload-preview" id="uploadPreview" style="display:none">
@@ -284,12 +324,14 @@
         </div>
       </div>
 
-      <aside class="summary" aria-label="Order summary">
+      <aside class="summary" id="orderSummary" aria-label="Order summary">
         <h2>Your order</h2>
         <div id="summaryItems"></div>
         <div class="sum-row"><span>Subtotal</span><span id="subtotal">Rs 0</span></div>
         <div class="sum-row"><span>Delivery</span><span id="delivery">Rs 0</span></div>
         <div class="sum-row sum-total"><span>Total</span><span id="total">Rs 0</span></div>
+        <p class="field-note" id="cartNote"></p>
+        <p id="formStatus" class="sr-only" role="status" aria-live="polite"></p>
         <button class="place-btn" onclick="placeOrder()">Place order</button>
         <a class="back-link" href="pasal-cart.html">← Back to cart</a>
       </aside>
@@ -400,6 +442,7 @@
 
   function updatePayment() {
     const method = document.querySelector('input[name="pay"]:checked').value;
+    clearInvalid(document.getElementById("uploadBtn"));
     document.getElementById("qrSection").classList.toggle("show", method === "qr");
   }
 
@@ -409,6 +452,7 @@
   function handleScreenshot(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) { alert("Please choose an image file (a screenshot or photo)."); return; }
+    clearInvalid(document.getElementById("uploadBtn"));
     document.getElementById("uploadStatus").textContent = "Processing photo…";
     document.getElementById("uploadStatus").style.color = "var(--muted)";
     document.getElementById("uploadPreview").style.display = "grid";
@@ -459,16 +503,141 @@
     document.getElementById("uploadBtn").style.display = "inline-block";
   }
 
+
+  /* --- Inline validation helpers ------------------------------------------ */
+  function markInvalid(el, message) {
+    if (!el) return;
+    el.classList.add("invalid");
+    el.setAttribute("aria-invalid", "true");
+    if (message) {
+      announce(message);
+      scrollIntoView(el);
+    }
+    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+      const label = document.querySelector('label[for="' + el.id + '"]');
+      if (label) label.classList.add("invalid");
+    }
+  }
+
+  function clearInvalid(el) {
+    const targets = el ? [el] : Array.prototype.slice.call(document.querySelectorAll(".invalid"));
+    targets.forEach(function (node) {
+      node.classList.remove("invalid");
+      node.removeAttribute("aria-invalid");
+      if (node.id) {
+        const label = document.querySelector('label[for="' + node.id + '"]');
+        if (label) label.classList.remove("invalid");
+        if (node.id === "phone") hideFieldNote("phoneNote");
+      }
+    });
+    if (!el) {
+      const note = document.getElementById("cartNote");
+      if (note) note.classList.remove("show");
+      announce("");
+    }
+  }
+
+  function showFieldNote(id) {
+    const note = document.getElementById(id);
+    if (note) note.classList.add("show");
+  }
+
+  function hideFieldNote(id) {
+    const note = document.getElementById(id);
+    if (note) note.classList.remove("show");
+  }
+
+  function showCartNote(message) {
+    const note = document.getElementById("cartNote");
+    if (note) {
+      note.textContent = message;
+      note.classList.add("show");
+      scrollIntoView(note);
+    }
+    announce(message);
+  }
+
+  function announce(message) {
+    const status = document.getElementById("formStatus");
+    if (status) status.textContent = message;
+  }
+
+  function scrollIntoView(el) {
+    try {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch (e) {
+      el.scrollIntoView();
+    }
+  }
+
+  // Clear the red state as soon as the customer starts fixing the field.
+  ["name", "phone", "address"].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", function () { clearInvalid(el); });
+  });
+  const cityEl = document.getElementById("city");
+  if (cityEl) cityEl.addEventListener("change", function () { clearInvalid(cityEl); });
+
   function placeOrder() {
     const name = document.getElementById("name").value.trim();
-    const phone = document.getElementById("phone").value.trim();
+    let phone = document.getElementById("phone").value.trim();
     const address = document.getElementById("address").value.trim();
-    if (cart.length === 0) { alert("Your cart is empty. Add some products first."); return; }
-    if (!name || !phone || !address) { alert("Please fill in your name, phone, and delivery address."); return; }
-
+    const city = document.getElementById("city").value;
     const method = document.querySelector('input[name="pay"]:checked').value;
+
+    // Inline validation: turn each offending box red. No popups, and the order
+    // summary is never highlighted — only the box the customer has to fix.
+    clearInvalid();
+
+    let firstBad = null;
+    let missing = [];
+
+    // Full name / Phone / Delivery address — each box highlighted on its own.
+    [
+      { id: "name", label: "full name" },
+      { id: "phone", label: "phone number" },
+      { id: "city", label: "district" },
+      { id: "address", label: "delivery address" }
+    ].forEach(function (field) {
+      const el = document.getElementById(field.id);
+      if (!el.value.trim()) {
+        markInvalid(el);
+        missing.push(field.label);
+        if (!firstBad) firstBad = el;
+      }
+    });
+
+    // Phone must be exactly 10 digits (separators like spaces or dashes are fine).
+    const phoneEl = document.getElementById("phone");
+    const phoneDigits = phoneEl.value.replace(/\D/g, "");
+    if (phoneEl.value.trim() && phoneDigits.length !== 10) {
+      markInvalid(phoneEl);
+      showFieldNote("phoneNote");
+      missing.push("a 10-digit phone number");
+      if (!firstBad) firstBad = phoneEl;
+    }
+
+    // Upload button highlighted when a QR payment has no screenshot attached.
     if (method === "qr" && !screenshotBlob) {
-      alert("Please upload your payment screenshot so we can verify your payment, or choose cash on delivery instead.");
+      const uploadBtn = document.getElementById("uploadBtn");
+      markInvalid(uploadBtn);
+      missing.push("payment screenshot");
+      if (!firstBad) firstBad = uploadBtn;
+    }
+
+    if (firstBad) {
+      announce("Please add your " + missing.join(", ") + ".");
+      if (typeof firstBad.focus === "function") firstBad.focus({ preventScroll: true });
+      scrollIntoView(firstBad);
+      return;
+    }
+
+    // Everything valid — send the phone as clean digits.
+    phone = phoneDigits;
+
+    if (cart.length === 0) {
+      // Nothing to highlight here — the summary already says the cart is empty.
+      showCartNote("Your cart is empty. Add some products before ordering.");
       return;
     }
     const orderNo = "PSL-" + Math.floor(1000 + Math.random() * 9000);
@@ -496,17 +665,17 @@
         const link = (result && result.success && result.data && result.data.url)
           ? result.data.url
           : "Upload failed — ask customer to send the screenshot on WhatsApp";
-        sendOrderEmail(name, phone, address, method, orderNo, itemList, link, btn);
+        sendOrderEmail(name, phone, address, city, method, orderNo, itemList, link, btn);
       })
       .catch(() => {
-        sendOrderEmail(name, phone, address, method, orderNo, itemList,
+        sendOrderEmail(name, phone, address, city, method, orderNo, itemList,
           "Upload failed — ask customer to send the screenshot on WhatsApp", btn);
       });
     } else {
       const note = (method === "qr" && screenshotBlob)
         ? "Customer attached a screenshot but image hosting is not configured — ask for it on WhatsApp"
         : null;
-      sendOrderEmail(name, phone, address, method, orderNo, itemList, note, btn);
+      sendOrderEmail(name, phone, address, city, method, orderNo, itemList, note, btn);
     }
   }
 
@@ -529,7 +698,7 @@
   const FORM_ENDPOINT_PLAIN = "https://formsubmit.co/" + encodeURIComponent(STORE_EMAIL);
   const SEND_TIMEOUT_MS = 20000;
 
-  function sendOrderEmail(name, phone, address, method, orderNo, itemList, screenshotLink, btn) {
+  function sendOrderEmail(name, phone, address, city, method, orderNo, itemList, screenshotLink, btn) {
     btn.textContent = "Placing order…";
 
     const fields = {
@@ -540,6 +709,7 @@
       Full_name: name,
       Phone_WhatsApp: phone,
       Delivery_address: address,
+      District: city,
       Payment_method: method === "qr" ? "Online payment (QR)" : "Cash on delivery",
       Items: itemList,
       Total: fmt(grandTotal)
