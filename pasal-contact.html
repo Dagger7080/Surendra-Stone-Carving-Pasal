@@ -223,7 +223,7 @@
       <div class="contact-card">
         <div class="glyph" aria-hidden="true">✉️</div>
         <h2>Email</h2>
-        <div class="value"><a id="emailLink" href="#">abc@gmail.com</a></div>
+        <div class="value"><a id="emailLink" href="#">surendracarvings@gmail.com</a></div>
         <p class="note">Best for bulk orders, wholesale enquiries, and detailed custom requests.</p>
         <div class="card-actions">
           <a class="btn btn-solid" id="emailBtn" href="#">Send an email</a>
@@ -259,10 +259,10 @@
           title="Map showing the shop location in Bhaktapur"
           loading="lazy"
           referrerpolicy="no-referrer-when-downgrade"
-          src="https://www.openstreetmap.org/export/embed.html?bbox=85.4130%2C27.6650%2C85.4460%2C27.6810&layer=mapnik&marker=27.6710%2C85.4298"></iframe>
+          src="https://www.openstreetmap.org/export/embed.html?bbox=85.409643%2C27.662532%2C85.442643%2C27.678532&layer=mapnik&marker=27.670532%2C85.426143"></iframe>
         <div class="map-foot">
           <div>
-            <strong>Bhaktapur, Nepal</strong>
+            <strong>Surendra Stone Carving · Bhaktapur, Nepal</strong>
             <span>Free delivery on orders over Rs 3,000 in Kathmandu Valley.</span>
           </div>
           <a class="btn" id="mapLinkBtn" href="#" target="_blank" rel="noopener">Open in Maps</a>
@@ -352,17 +352,17 @@
   const SHOP = {
     phone:        "98XXXXXXXX",                 // local number shown on the page
     countryCode:  "977",                        // Nepal
-    email:        "abc@gmail.com",
-    locationName: "Bhaktapur",
+    email:        "surendracarvings@gmail.com",
+    locationName: "Surendra Stone Carving, Bhaktapur",
     address:      "Bhaktapur, Kathmandu Valley, Nepal",
-    mapQuery:     "Bhaktapur, Nepal"            // used for the "Get directions" link
+    mapUrl:       "https://www.google.com/maps/place/Surendra+stone+carving+Pasal/@27.67052,85.426141,17z/data=!3m1!4b1!4m6!3m5!1s0x39eb1aa5992c4c41:0x2fcdfb2de89ad0af!8m2!3d27.67052!4d85.426141!16s%2Fg%2F11b6qcsd75"   // real Google Maps listing — shows the shop name, not just coordinates
   };
   /* ========================================================================== */
 
   const digits = SHOP.phone.replace(/[^0-9]/g, "");
   const intl = "+" + SHOP.countryCode + digits;          // e.g. +97798XXXXXXXX
   const viberUrl = "viber://chat?number=" + encodeURIComponent(intl);
-  const mapUrl = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(SHOP.mapQuery);
+  const mapUrl = SHOP.mapUrl;
 
   // Fill in every detail from the SHOP object above
   document.getElementById("phoneLink").textContent = SHOP.phone;

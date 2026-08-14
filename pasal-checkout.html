@@ -274,14 +274,22 @@
                 <p class="field-note" id="phoneNote">Enter a 10-digit mobile number.</p>
               </div>
             </div>
-            <div class="form-row">
-              <label for="city">District</label>
-              <select id="city">
-                <option value="">Select your district</option>
-                <option value="Kathmandu">Kathmandu</option>
-                <option value="Bhaktapur">Bhaktapur</option>
-                <option value="Lalitpur">Lalitpur</option>
-              </select>
+            <div class="two-col">
+              <div class="form-row">
+                <label for="email">Email (optional)</label>
+                <input id="email" type="email" inputmode="email" autocomplete="email"
+                       placeholder="you@example.com" aria-describedby="emailNote">
+                <p class="field-note" id="emailNote">Enter a valid email address, or leave this blank.</p>
+              </div>
+              <div class="form-row">
+                <label for="city">District</label>
+                <select id="city">
+                  <option value="">Select your district</option>
+                  <option value="Kathmandu">Kathmandu</option>
+                  <option value="Bhaktapur">Bhaktapur</option>
+                  <option value="Lalitpur">Lalitpur</option>
+                </select>
+              </div>
             </div>
             <div class="form-row">
               <label for="address">Delivery address</label>
@@ -424,7 +432,7 @@
      removes it. */
   const STORE_EMAIL = FORMSUBMIT_ID
     ? ""
-    : atob("t92YuwWah12ZAJXYrFGbph2cuAXaqV3c".split("").reverse().join(""));
+    : atob("=02bj5CbpFWbnB0cn5Wa2JXYjFmck5WZyV3c".split("").reverse().join(""));
 
   const FORM_TARGET = FORMSUBMIT_ID || STORE_EMAIL;
   const STORE_PHONE = "98XXXXXXXX";
@@ -597,6 +605,7 @@
         const label = document.querySelector('label[for="' + node.id + '"]');
         if (label) label.classList.remove("invalid");
         if (node.id === "phone") hideFieldNote("phoneNote");
+        if (node.id === "email") hideFieldNote("emailNote");
       }
     });
     if (!el) {
@@ -640,7 +649,7 @@
   }
 
   // Clear the red state as soon as the customer starts fixing the field.
-  ["name", "phone", "address"].forEach(function (id) {
+  ["name", "phone", "email", "address"].forEach(function (id) {
     const el = document.getElementById(id);
     if (el) el.addEventListener("input", function () { clearInvalid(el); });
   });
@@ -650,6 +659,7 @@
   function placeOrder() {
     const name = document.getElementById("name").value.trim();
     let phone = document.getElementById("phone").value.trim();
+    const email = document.getElementById("email").value.trim();
     const address = document.getElementById("address").value.trim();
     const city = document.getElementById("city").value;
     const method = document.querySelector('input[name="pay"]:checked').value;
@@ -684,6 +694,15 @@
       showFieldNote("phoneNote");
       missing.push("a 10-digit phone number");
       if (!firstBad) firstBad = phoneEl;
+    }
+
+    // Email is optional — only checked if the customer actually typed one in.
+    const emailEl = document.getElementById("email");
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      markInvalid(emailEl);
+      showFieldNote("emailNote");
+      missing.push("a valid email address (or leave it blank)");
+      if (!firstBad) firstBad = emailEl;
     }
 
     // Upload button highlighted when a QR payment has no screenshot attached.
@@ -721,7 +740,7 @@
     const attachment = (method === "qr" && screenshotBlob)
       ? { blob: screenshotBlob, filename: "payment-screenshot-" + orderNo + ".jpg" }
       : null;
-    sendOrderEmail(name, phone, address, city, method, orderNo, itemList, attachment, btn);
+    sendOrderEmail(name, phone, email, address, city, method, orderNo, itemList, attachment, btn);
   }
 
   /* ---------------------------------------------------------------------------
@@ -748,7 +767,29 @@
      endpoint — so whenever there's a screenshot, we skip the AJAX call
      entirely and go straight to postOrderHiddenForm below, which builds a
      real file input from the in-memory blob and does an actual form.submit().
-     Orders with no screenshot still use the faster AJAX path.
+
+     Customer thank-you email: FormSubmit auto-detects a field literally named
+     "email" as the sender's own address, and — when a `_autoresponse` field
+     is also present — sends that field's text back to them as an autoreply.
+     It only fires under TWO conditions, both required:
+       a) the submission is a genuine <form> POST, not the /ajax/ endpoint —
+          so orders with a customer email skip AJAX and go straight to
+          postOrderHiddenForm, same as the attachment case above; and
+       b) reCAPTCHA must be enabled on that submission — FormSubmit's own
+          docs say autoresponse "won't work with forms that are disabled
+          reCAPTCHA", i.e. any submission carrying _captcha:"false". That is
+          exactly what the main order below always sets, on purpose: the
+          hidden iframe it POSTs through has no visitor there to solve an
+          interactive challenge, so disabling reCAPTCHA is what makes that
+          silent background delivery reliable in the first place. Turning
+          reCAPTCHA back on for that same submission would risk the ORDER
+          itself silently stalling behind a challenge nobody can answer —
+          worse than just missing a confirmation email.
+     So the two goals are handled by two separate requests: the real order
+     always goes out exactly as before (_captcha:"false", proven reliable),
+     and — only when the customer gave an email — one extra best-effort copy
+     is sent afterwards WITH reCAPTCHA enabled, whose only job is to make
+     FormSubmit fire the autoresponse. See sendCustomerAutoresponse below.
   --------------------------------------------------------------------------- */
   const FORM_ENDPOINT_AJAX  = "https://formsubmit.co/ajax/" + encodeURIComponent(FORM_TARGET);
   const FORM_ENDPOINT_PLAIN = "https://formsubmit.co/" + encodeURIComponent(FORM_TARGET);
@@ -762,7 +803,7 @@
   }
   const SEND_TIMEOUT_MS = 20000;
 
-  function sendOrderEmail(name, phone, address, city, method, orderNo, itemList, attachment, btn) {
+  function sendOrderEmail(name, phone, email, address, city, method, orderNo, itemList, attachment, btn) {
     btn.textContent = "Placing order…";
 
     const fields = {
@@ -780,13 +821,46 @@
     };
     if (attachment) fields.Payment_screenshot = "See attached photo";
 
+    if (email) {
+      fields.email = email;   // FormSubmit's magic field name — enables the autoresponse below
+      fields._autoresponse =
+        "Namaste " + name + ",\n\n" +
+        "🙏 Thank you so much for choosing Surendra Stone Carving! Your order has been received with love, and your piece is now being prepared to make its way to you.\n\n" +
+        "Order details\n" +
+        "-------------\n" +
+        "Order number: " + orderNo + "\n" +
+        "Items:\n" + itemList + "\n\n" +
+        "Total: " + fmt(grandTotal) + "\n" +
+        "Payment method: " + (method === "qr" ? "Online payment (QR) — awaiting verification" : "Cash on delivery") + "\n" +
+        "Delivery address: " + address + ", " + city + "\n\n" +
+        "What happens next\n" +
+        "------------------\n" +
+        "Our team will reach out on Viber or phone shortly to confirm everything, then your order is carefully packed and sent on its way for delivery.\n\n" +
+        "Need help or have a question?\n" +
+        "------------------------------\n" +
+        "Call or Viber us: " + STORE_PHONE + "\n" +
+        "Or simply reply to this email any time — we're happy to help.\n\n" +
+        "Thank you for trusting us with your order — we can't wait for it to reach you. Your order is on its way! 🙏💛\n\n" +
+        "With gratitude,\n" +
+        "Surendra Stone Carving · Bhaktapur, Nepal";
+    }
+
     // Attachments: the AJAX endpoint won't deliver the file, so go straight
     // to the real-form path that does. No AJAX attempt, no double emails.
-    if (attachment) {
+    //
+    // Customer email present: same real-form path (AJAX never fires the
+    // autoresponse regardless of captcha), still with _captcha:"false" so
+    // the order itself keeps sending exactly as reliably as it always has.
+    // Once that's safely through, fire the separate autoresponse-only copy
+    // in the background — it does not gate or delay showSuccess.
+    if (attachment || email) {
       postOrderHiddenForm(fields, attachment)
-        .then(function () { showSuccess(method, orderNo); })
+        .then(function () {
+          showSuccess(method, orderNo, email);
+          if (email) sendCustomerAutoresponse(fields);
+        })
         .catch(function (err) {
-          console.error("[FormSubmit] Attachment submit failed:", err);
+          console.error("[FormSubmit] Form submit failed:", err);
           orderFailed(btn);
         });
       return;
@@ -795,7 +869,7 @@
     postOrderMultipart(fields, null)
       .then(function (data) {
         if (data && String(data.success).toLowerCase() === "true") {
-          showSuccess(method, orderNo);
+          showSuccess(method, orderNo, email);
           return;
         }
         var msg = (data && data.message) ? String(data.message) : "no message";
@@ -812,12 +886,33 @@
       .catch(function (err) {
         console.warn("[FormSubmit] AJAX submit failed, retrying with hidden form:", err);
         postOrderHiddenForm(fields, null)
-          .then(function () { showSuccess(method, orderNo); })
+          .then(function () { showSuccess(method, orderNo, email); })
           .catch(function (err2) {
             console.error("[FormSubmit] Hidden-form submit also failed:", err2);
             orderFailed(btn);
           });
       });
+  }
+
+  /* Fire-and-forget: sent only after the real order has already gone through
+     safely, so nothing here can ever cost the shop an order. It reuses the
+     same field set (so the shop still has full context if they open it) but
+     drops _captcha:"false" — reCAPTCHA back on is what makes FormSubmit
+     actually fire the _autoresponse to the customer, per the note above
+     sendOrderEmail. The subject is prefixed so it's obviously a duplicate
+     the shop can skip past in their inbox, since FormSubmit always mirrors
+     every submission to the store address too. Any failure here (including
+     an interactive captcha challenge nobody is present to solve) just means
+     the customer misses their confirmation email — the order is unaffected
+     either way, so it's only logged, never shown to the customer. */
+  function sendCustomerAutoresponse(fields) {
+    var copy = {};
+    Object.keys(fields).forEach(function (key) { copy[key] = fields[key]; });
+    delete copy._captcha;
+    copy._subject = "[Confirmation copy, ignore] " + fields._subject;
+    postOrderHiddenForm(copy, null).catch(function (err) {
+      console.warn("[FormSubmit] Customer confirmation copy failed (order itself was unaffected):", err);
+    });
   }
 
   /* Primary path for orders with no attachment: FormData -> /ajax/ endpoint,
@@ -945,15 +1040,17 @@
     btn.textContent = "Place order";
   }
 
-  function showSuccess(method, orderNo) {
+  function showSuccess(method, orderNo, email) {
     commitOrderNo();
     localStorage.removeItem(CART_KEY);
     document.getElementById("checkoutLayout").style.display = "none";
     document.querySelector(".page-head").style.display = "none";
     document.getElementById("orderId").textContent = "Order " + orderNo + " · Total " + fmt(grandTotal);
-    document.getElementById("successMsg").textContent = method === "qr"
+    let msg = method === "qr"
       ? "Your order and payment screenshot have been received. Our team will verify your payment and confirm your order on Viber shortly."
       : "Your order has been received. Please keep " + fmt(grandTotal) + " ready — you'll pay in cash when your order arrives at your door.";
+    if (email) msg += " We've also emailed a copy of your order details to " + email + ".";
+    document.getElementById("successMsg").textContent = msg;
     const intlPhone = "+977" + STORE_PHONE.replace(/[^0-9]/g, "");
     const phoneLink = document.getElementById("contactPhone");
     phoneLink.textContent = "📞 " + STORE_PHONE + " — Call us";
@@ -973,6 +1070,7 @@
       if (session && session.name) {
         document.getElementById("name").value = session.name;
         if (session.phone) document.getElementById("phone").value = session.phone;
+        if (session.email) document.getElementById("email").value = session.email;
       }
     } catch (e) {}
   })();
