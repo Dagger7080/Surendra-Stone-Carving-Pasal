@@ -464,6 +464,7 @@
   const fmt = n => "Rs " + n.toLocaleString("en-IN");
 
   const CART_KEY = "pasal_cart";
+  const PENDING_KEY = "pasal_pending_order";   // survives the FormSubmit round-trip, see resumeAfterRedirect
   let cart = [];
   try {
     const saved = JSON.parse(localStorage.getItem(CART_KEY)) || {};
@@ -763,33 +764,38 @@
      field — the order arrives with the "Payment_screenshot" text label and
      no picture, which is exactly the symptom this comment is here to explain
      if it comes back. Real file attachments only make it through as a
-     genuine <form> submission (enctype="multipart/form-data") to the PLAIN
-     endpoint — so whenever there's a screenshot, we skip the AJAX call
-     entirely and go straight to postOrderHiddenForm below, which builds a
-     real file input from the in-memory blob and does an actual form.submit().
+     genuine <form> submission (enctype="multipart/form-data").
 
-     Customer thank-you email: FormSubmit auto-detects a field literally named
-     "email" as the sender's own address, and — when a `_autoresponse` field
-     is also present — sends that field's text back to them as an autoreply.
-     It only fires under TWO conditions, both required:
-       a) the submission is a genuine <form> POST, not the /ajax/ endpoint —
-          so orders with a customer email skip AJAX and go straight to
-          postOrderHiddenForm, same as the attachment case above; and
-       b) reCAPTCHA must be enabled on that submission — FormSubmit's own
-          docs say autoresponse "won't work with forms that are disabled
-          reCAPTCHA", i.e. any submission carrying _captcha:"false". That is
-          exactly what the main order below always sets, on purpose: the
-          hidden iframe it POSTs through has no visitor there to solve an
-          interactive challenge, so disabling reCAPTCHA is what makes that
-          silent background delivery reliable in the first place. Turning
-          reCAPTCHA back on for that same submission would risk the ORDER
-          itself silently stalling behind a challenge nobody can answer —
-          worse than just missing a confirmation email.
-     So the two goals are handled by two separate requests: the real order
-     always goes out exactly as before (_captcha:"false", proven reliable),
-     and — only when the customer gave an email — one extra best-effort copy
-     is sent afterwards WITH reCAPTCHA enabled, whose only job is to make
-     FormSubmit fire the autoresponse. See sendCustomerAutoresponse below.
+     Customer thank-you email — why this took three tries to get right:
+       Attempt 1: send with the rest of the order via /ajax/. FormSubmit's
+       docs say _autoresponse never fires over AJAX, full stop — the shop's
+       copy arrived, the customer's never could.
+       Attempt 2: switch to a genuine <form> POST, but keep it invisible via
+       a hidden iframe (so the page never has to leave), with _captcha:"false"
+       so that silent background POST wouldn't get stuck behind a challenge
+       nobody is there to solve. That satisfied "genuine form POST" but not
+       FormSubmit's OTHER hard requirement: "autoresponse won't work with
+       forms that are disabled reCAPTCHA" — so a second, invisible, captcha
+       -enabled copy was fired afterwards purely to trigger the autoresponse.
+       In testing that copy still never arrived — most likely FormSubmit's
+       captcha step needs an actual visitor to resolve it, and a hidden
+       iframe has nobody in it to do that, so the copy silently stalled.
+       Attempt 3 (current): stop trying to do this invisibly. Whenever the
+       customer gave an email or attached a payment screenshot, the order now
+       submits as a REAL, visible, top-level form POST straight to FormSubmit
+       — not to a hidden iframe — with reCAPTCHA left ON. A real visitor is
+       in the tab if FormSubmit ever needs anything from them, and this is
+       FormSubmit's own documented, officially-supported way of using
+       _autoresponse. The browser briefly leaves this page and FormSubmit
+       redirects it straight back (via the `_next` field) once the order is
+       in; resumeAfterRedirect() below picks the order back up on return and
+       shows the normal success screen, so it still reads as "stayed on the
+       page placing an order" with one quick flash in between.
+       Orders with NEITHER a screenshot NOR a customer email still use the
+       fast, fully invisible AJAX path below — there's no autoresponse to
+       trigger, so there's nothing reCAPTCHA-shaped to work around.
+       NOTE: `_next` must be an http(s) URL, so this path only works once the
+       page is on its real hosted address — not when opened as a local file.
   --------------------------------------------------------------------------- */
   const FORM_ENDPOINT_AJAX  = "https://formsubmit.co/ajax/" + encodeURIComponent(FORM_TARGET);
   const FORM_ENDPOINT_PLAIN = "https://formsubmit.co/" + encodeURIComponent(FORM_TARGET);
@@ -823,46 +829,48 @@
 
     if (email) {
       fields.email = email;   // FormSubmit's magic field name — enables the autoresponse below
+      // FormSubmit's _autoresponse only ever renders as plain text (confirmed
+      // in testing — no HTML, no colors, no icons), so this can't literally
+      // look like the success PAGE. Instead it mirrors that page's actual
+      // wording and structure line for line — same "✓ Thank you" opener, the
+      // same three numbered steps in the same words, the same contact block —
+      // so it reads as the email version of the same moment, not a separate
+      // generic receipt.
+      const firstName = name.split(" ")[0];
+      const paymentLine = method === "qr"
+        ? "Your order and payment screenshot have been received. Our team will verify your payment and confirm your order on Viber shortly."
+        : "Your order has been received. Please keep " + fmt(grandTotal) + " ready — you'll pay in cash when your order arrives at your door.";
+      // A single "\n" gets swallowed by Gmail's plain-text rendering (it just
+      // becomes a space, not a line break) — only a full blank line ("\n\n")
+      // reliably shows up as a gap. So every line that needs to visibly stand
+      // on its own — including each step's title vs. its own description —
+      // is separated by a real blank line, not a single newline.
       fields._autoresponse =
-        "Namaste " + name + ",\n\n" +
-        "🙏 Thank you so much for choosing Surendra Stone Carving! Your order has been received with love, and your piece is now being prepared to make its way to you.\n\n" +
-        "Order details\n" +
-        "-------------\n" +
-        "Order number: " + orderNo + "\n" +
-        "Items:\n" + itemList + "\n\n" +
-        "Total: " + fmt(grandTotal) + "\n" +
-        "Payment method: " + (method === "qr" ? "Online payment (QR) — awaiting verification" : "Cash on delivery") + "\n" +
-        "Delivery address: " + address + ", " + city + "\n\n" +
-        "What happens next\n" +
-        "------------------\n" +
-        "Our team will reach out on Viber or phone shortly to confirm everything, then your order is carefully packed and sent on its way for delivery.\n\n" +
-        "Need help or have a question?\n" +
-        "------------------------------\n" +
-        "Call or Viber us: " + STORE_PHONE + "\n" +
+        "✓ THANK YOU FOR PLACING YOUR ORDER, " + firstName.toUpperCase() + "!\n\n" +
+        "Order " + orderNo + " · Total " + fmt(grandTotal) + "\n\n" +
+        paymentLine + "\n\n" +
+        "WHAT HAPPENS NEXT\n" +
+        "-----------------\n\n" +
+        "1. We confirm\n\n" +
+        "Our team will contact you on Viber shortly to confirm your order and delivery time.\n\n" +
+        "2. We pack\n\n" +
+        "Your items are carefully checked and packed for delivery.\n\n" +
+        "3. We deliver\n\n" +
+        "Your order arrives at your doorstep — inspect it before you pay if you chose cash on delivery.\n\n" +
+        "NEED HELP OR HAVE A QUESTION?\n\n" +
+        "Please keep your phone nearby — we'll be in touch soon.\n\n" +
+        "Call or Viber us: " + STORE_PHONE + "\n\n" +
         "Or simply reply to this email any time — we're happy to help.\n\n" +
-        "Thank you for trusting us with your order — we can't wait for it to reach you. Your order is on its way! 🙏💛\n\n" +
-        "With gratitude,\n" +
+        "Thank you for trusting Surendra Stone Carving. We appreciate every order! 🙏\n\n" +
         "Surendra Stone Carving · Bhaktapur, Nepal";
     }
 
-    // Attachments: the AJAX endpoint won't deliver the file, so go straight
-    // to the real-form path that does. No AJAX attempt, no double emails.
-    //
-    // Customer email present: same real-form path (AJAX never fires the
-    // autoresponse regardless of captcha), still with _captcha:"false" so
-    // the order itself keeps sending exactly as reliably as it always has.
-    // Once that's safely through, fire the separate autoresponse-only copy
-    // in the background — it does not gate or delay showSuccess.
+    // Attachment or customer email: real, visible, top-level submission —
+    // see the big comment above for why. The browser navigates away and
+    // FormSubmit sends it straight back; nothing more happens on this page
+    // until resumeAfterRedirect() picks it up on return.
     if (attachment || email) {
-      postOrderHiddenForm(fields, attachment)
-        .then(function () {
-          showSuccess(method, orderNo, email);
-          if (email) sendCustomerAutoresponse(fields);
-        })
-        .catch(function (err) {
-          console.error("[FormSubmit] Form submit failed:", err);
-          orderFailed(btn);
-        });
+      submitViaRealNavigation(fields, attachment, orderNo, method, email);
       return;
     }
 
@@ -894,25 +902,96 @@
       });
   }
 
-  /* Fire-and-forget: sent only after the real order has already gone through
-     safely, so nothing here can ever cost the shop an order. It reuses the
-     same field set (so the shop still has full context if they open it) but
-     drops _captcha:"false" — reCAPTCHA back on is what makes FormSubmit
-     actually fire the _autoresponse to the customer, per the note above
-     sendOrderEmail. The subject is prefixed so it's obviously a duplicate
-     the shop can skip past in their inbox, since FormSubmit always mirrors
-     every submission to the store address too. Any failure here (including
-     an interactive captcha challenge nobody is present to solve) just means
-     the customer misses their confirmation email — the order is unaffected
-     either way, so it's only logged, never shown to the customer. */
-  function sendCustomerAutoresponse(fields) {
-    var copy = {};
-    Object.keys(fields).forEach(function (key) { copy[key] = fields[key]; });
-    delete copy._captcha;
-    copy._subject = "[Confirmation copy, ignore] " + fields._subject;
-    postOrderHiddenForm(copy, null).catch(function (err) {
-      console.warn("[FormSubmit] Customer confirmation copy failed (order itself was unaffected):", err);
+  /* Real, visible, top-level submission — the browser actually leaves this
+     page for FormSubmit and comes back via `_next`. Used whenever there's a
+     payment screenshot and/or a customer email; see the big comment above
+     sendOrderEmail for why. Nothing is returned/awaited here: once
+     form.submit() runs the page is on its way out, so state that needs to
+     survive the round trip is saved to localStorage first and picked back
+     up by resumeAfterRedirect() below when FormSubmit sends the browser
+     back. The order number is deliberately NOT committed here (that only
+     happens on a confirmed return), so if the customer never makes it back
+     — closes the tab, loses connection — the number is not burned. */
+  function submitViaRealNavigation(fields, attachment, orderNo, method, email) {
+    try {
+      localStorage.setItem(PENDING_KEY, JSON.stringify({
+        orderNo: orderNo, method: method, total: grandTotal, email: email
+      }));
+    } catch (e) {}
+
+    const returnUrl = location.href.split("?")[0].split("#")[0] +
+      "?orderConfirmed=" + encodeURIComponent(orderNo);
+
+    const form = document.createElement("form");
+    form.action = FORM_ENDPOINT_PLAIN;
+    form.method = "POST";
+    form.enctype = "multipart/form-data";
+    form.acceptCharset = "UTF-8";
+    form.style.display = "none";
+    // No `target` — this submits in the current tab, a real navigation.
+
+    const allFields = {};
+    Object.keys(fields).forEach(function (key) { allFields[key] = fields[key]; });
+    delete allFields._captcha;   // leave reCAPTCHA ON — required for _autoresponse to fire
+    allFields._next = returnUrl;
+
+    Object.keys(allFields).forEach(function (key) {
+      const field = document.createElement("textarea");
+      field.name = key;
+      field.value = allFields[key];
+      form.appendChild(field);
     });
+
+    if (attachment && "DataTransfer" in window) {
+      try {
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.name = "attachment";
+        const dt = new DataTransfer();
+        dt.items.add(new File([attachment.blob], attachment.filename, { type: attachment.blob.type || "image/jpeg" }));
+        fileInput.files = dt.files;
+        form.appendChild(fileInput);
+      } catch (e) {
+        // Older browsers can't build a FileList this way — the order still
+        // sends, just without the photo attached.
+      }
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  /* Runs on every load of this page. If the URL carries ?orderConfirmed=...
+     it means FormSubmit just sent the browser back here via `_next` after a
+     submitViaRealNavigation() round trip — i.e. the order (and, if given,
+     the customer's confirmation email) has actually gone out. Pick the
+     saved details back up, commit the order number for real, clear the
+     cart, and show the exact same success screen the fast path shows —
+     the round trip reads as a brief flash, not a different flow. */
+  function resumeAfterRedirect() {
+    const params = new URLSearchParams(location.search);
+    const confirmedOrder = params.get("orderConfirmed");
+    if (!confirmedOrder) return;
+
+    history.replaceState(null, "", location.pathname);   // strip the query so a refresh doesn't replay this
+
+    let pending = null;
+    try { pending = JSON.parse(localStorage.getItem(PENDING_KEY)); } catch (e) {}
+    localStorage.removeItem(PENDING_KEY);
+    if (!pending || pending.orderNo !== confirmedOrder) return;   // nothing trustworthy to resume with
+
+    // Advance the sequence counter past this order, same effect as
+    // commitOrderNo() but from a fresh page load with no pendingSeq in memory.
+    const n = parseInt(String(confirmedOrder).replace(/[^0-9]/g, ""), 10);
+    if (!isNaN(n)) {
+      try {
+        const last = parseInt(localStorage.getItem(ORDER_SEQ_KEY), 10);
+        if (isNaN(last) || n > last) localStorage.setItem(ORDER_SEQ_KEY, String(n));
+      } catch (e) {}
+    }
+
+    grandTotal = pending.total;
+    showSuccess(pending.method, pending.orderNo, pending.email);
   }
 
   /* Primary path for orders with no attachment: FormData -> /ajax/ endpoint,
@@ -1063,6 +1142,7 @@
 
   renderSummary();
   updatePayment();
+  resumeAfterRedirect();
 
   (function prefillFromSession() {
     try {
