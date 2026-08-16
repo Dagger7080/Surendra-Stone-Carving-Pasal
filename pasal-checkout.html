@@ -43,7 +43,7 @@
 
   header { background: var(--paper); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
   .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; }
-  .logo { display: flex; align-items: baseline; gap: 8px; }
+  .logo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
   .logo-en { font-family: 'Cinzel', serif; font-weight: 700; font-size: 18px; letter-spacing: 0.5px; }
   .logo-np { font-family: 'Mukta', sans-serif; font-weight: 600; font-size: 16px; color: var(--teal); }
   .steps { font-size: 14px; color: var(--muted); }
@@ -847,17 +847,6 @@
       // is separated by a real blank line, not a single newline.
       fields._autoresponse =
         "✓ THANK YOU FOR PLACING YOUR ORDER, " + firstName.toUpperCase() + "!\n\n" +
-        "Order " + orderNo + " · Total " + fmt(grandTotal) + "\n\n" +
-        paymentLine + "\n\n" +
-        "WHAT HAPPENS NEXT\n" +
-        "-----------------\n\n" +
-        "1. We confirm\n\n" +
-        "Our team will contact you on Viber shortly to confirm your order and delivery time.\n\n" +
-        "2. We pack\n\n" +
-        "Your items are carefully checked and packed for delivery.\n\n" +
-        "3. We deliver\n\n" +
-        "Your order arrives at your doorstep — inspect it before you pay if you chose cash on delivery.\n\n" +
-        "NEED HELP OR HAVE A QUESTION?\n\n" +
         "Please keep your phone nearby — we'll be in touch soon.\n\n" +
         "Call or Viber us: " + STORE_PHONE + "\n\n" +
         "Or simply reply to this email any time — we're happy to help.\n\n" +

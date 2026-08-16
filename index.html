@@ -8,6 +8,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Karla:wght@400;500;700&family=Mukta:wght@600&display=swap" rel="stylesheet">
 <style>
+  /* The header is position:sticky, so an in-page jump like #categories lands
+     the target flush with the viewport top and the sticky header then
+     covers it — this reserves that much space above every anchor target so
+     headings land visible just below the header instead of tucked under it. */
+  html { scroll-padding-top: 90px; }
+
   :root {
     --ink: #2A2420;
     --paper: #E8DFC8;
@@ -46,7 +52,7 @@
     display: flex; align-items: center; justify-content: space-between;
     gap: 16px; padding: 14px 0;
   }
-  .logo { display: flex; align-items: baseline; gap: 8px; }
+  .logo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
   .logo-en { font-family: 'Cinzel', serif; font-weight: 700; font-size: 18px; letter-spacing: 0.5px; }
   .logo-np { font-family: 'Mukta', sans-serif; font-weight: 600; font-size: 16px; color: var(--teal); }
   nav.main { display: flex; gap: 22px; font-weight: 500; font-size: 15px; }
@@ -149,10 +155,12 @@
 
   /* Footer */
   footer { background: var(--ink); color: var(--paper); margin-top: 40px; }
-  .footer-inner { padding: 36px 0 28px; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 32px; }
+  .footer-inner { padding: 36px 20px 28px; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 32px; }
   .footer-inner h4 { font-family: 'Cinzel', serif; margin-bottom: 10px; font-size: 16px; }
   .footer-inner ul { list-style: none; display: grid; gap: 8px; font-size: 14px; color: #C7BCA2; }
   .footer-inner a:hover { color: var(--marigold); }
+  .footer-brand h4 { padding-left: 4px; }
+  .footer-np { font-family: 'Mukta', sans-serif; font-size: 22px; color: var(--marigold); }
   .footer-brand p { font-size: 14px; color: #C7BCA2; max-width: 34ch; }
   .footer-bottom { border-top: 1px solid #473D34; padding: 14px 0; font-size: 13px; color: #9C8F76; }
 
@@ -164,6 +172,53 @@
     pointer-events: none;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Sign in / Sign up modal */
+  .auth-overlay {
+    position: fixed; inset: 0; background: rgba(42,36,32,0.55);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px; z-index: 200;
+  }
+  .auth-overlay.show { display: flex; }
+  .auth-modal {
+    background: #fff; border-radius: 14px; width: 100%; max-width: 400px;
+    overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+  .auth-head {
+    background: var(--teal); color: #fff; padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .auth-head h2 { font-size: 20px; }
+  .auth-close {
+    background: none; border: none; color: #fff; font-size: 20px;
+    line-height: 1; padding: 4px; cursor: pointer; opacity: 0.9;
+  }
+  .auth-close:hover { opacity: 1; }
+  .auth-body { padding: 22px 20px 24px; display: grid; gap: 16px; }
+  .auth-field { display: grid; gap: 6px; }
+  .auth-field label { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .auth-field label .req { color: #A8402B; }
+  .auth-field input {
+    font-family: inherit; font-size: 15px; padding: 11px 14px;
+    border: 1.5px solid var(--line); border-radius: 10px;
+    background: var(--card); color: var(--ink);
+  }
+  .auth-field input:focus { border-color: var(--teal); outline: none; background: #fff; }
+  .auth-field input.invalid { border-color: #A8402B; background: #F3E4DC; }
+  .auth-note { display: none; font-size: 12px; font-weight: 700; color: #A8402B; }
+  .auth-note.show { display: block; }
+  .auth-submit {
+    border: none; background: var(--teal); color: #fff; padding: 13px;
+    border-radius: 10px; font-weight: 700; font-size: 16px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .auth-submit:hover { background: var(--teal-dark); }
+  .auth-foot {
+    display: flex; justify-content: space-between; flex-wrap: wrap;
+    gap: 8px; font-size: 13px; color: var(--muted);
+  }
+  .auth-foot a { color: var(--teal); font-weight: 700; }
+  .auth-foot a:hover { text-decoration: underline; }
 
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
@@ -195,8 +250,8 @@
       <a href="pasal-contact.html">Contact</a>
     </nav>
     <div class="header-actions" id="headerActions">
-      <a class="btn" href="pasal-account.html">Log in</a>
-      <a class="btn btn-solid" href="pasal-account.html?mode=signup">Sign up</a>
+      <a class="btn" href="#" onclick="openAuth('signin'); return false;">Log in</a>
+      <a class="btn btn-solid" href="#" onclick="openAuth('signup'); return false;">Sign up</a>
       <button class="btn btn-cart" aria-label="Shopping cart" onclick="goToCart()">
         Cart <span class="cart-count" id="cartCount">0</span>
       </button>
@@ -292,8 +347,8 @@
 <footer id="contact">
   <div class="wrap footer-inner">
     <div class="footer-brand">
-      <h4>Surendra Stone Carving · पसल</h4>
-      <p>A family stone carving workshop in Kathmandu — statues, dharas, and household stoneware, hand-carved and delivered to your door.</p>
+      <h4>Surendra Stone Carving · <span class="footer-np">पसल</span></h4>
+      <p>A family stone carving workshop in Bhaktapur — statues, dharas, and household stoneware, hand-carved and delivered to your door.</p>
     </div>
     <div>
       <h4>Store</h4>
@@ -313,11 +368,44 @@
     </div>
   </div>
   <div class="footer-bottom">
-    <div class="wrap">© 2026 Surendra Stone Carving · Kathmandu, Nepal</div>
+    <div class="wrap">© 2026 Surendra Stone Carving · Bhaktapur, Nepal</div>
   </div>
 </footer>
 
 <div class="toast" id="toast" role="status">Added to cart</div>
+
+<!-- Sign in / Sign up modal — see the script comment near openAuth() for
+     what this actually is (a local-only demo, no real backend). -->
+<div class="auth-overlay" id="authOverlay" aria-hidden="true">
+  <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div class="auth-head">
+      <h2 id="authTitle">Sign In</h2>
+      <button class="auth-close" onclick="closeAuth()" aria-label="Close">✕</button>
+    </div>
+    <div class="auth-body">
+      <div class="auth-field" id="authNameField" style="display:none;">
+        <label for="authName">Full name <span class="req">*</span></label>
+        <input type="text" id="authName" placeholder="Sita Sharma" autocomplete="name">
+        <p class="auth-note" id="authNameNote">Please enter your name.</p>
+      </div>
+      <div class="auth-field">
+        <label for="authPhone">Phone Number <span class="req">*</span></label>
+        <input type="tel" id="authPhone" inputmode="numeric" maxlength="14" placeholder="98XXXXXXXX" autocomplete="tel">
+        <p class="auth-note" id="authPhoneNote">Enter a 10-digit mobile number.</p>
+      </div>
+      <div class="auth-field">
+        <label for="authPassword">Password <span class="req">*</span></label>
+        <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
+        <p class="auth-note" id="authPasswordNote">Password must be at least 4 characters.</p>
+      </div>
+      <button class="auth-submit" id="authSubmit" onclick="submitAuth()">→ Sign in</button>
+      <div class="auth-foot">
+        <span id="authToggleWrap">First time user? <a href="#" onclick="toggleAuthMode(event)">Sign up</a></span>
+        <a href="#" onclick="forgotPassword(event)">Forgot Password ?</a>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
   const products = [
@@ -404,6 +492,135 @@
     localStorage.removeItem("pasal_session");
     window.location.reload();
   }
+
+  /* ---------------------------------------------------------------------------
+     Sign in / Sign up — a local demo only, not real authentication. There is
+     no server anywhere on this site (order emails go through FormSubmit,
+     nothing else), so "accounts" are just an array of {name, phone, password}
+     kept in this browser's own localStorage under "pasal_users". Nothing is
+     encrypted, nothing syncs across devices, and anyone with dev tools open
+     can read it in plain text. It exists so Log in / Sign up behave
+     coherently — sign up once, then sign back in and be recognized — rather
+     than the buttons going to a page that doesn't exist. On success it saves
+     the same "pasal_session" object every other page already reads to show
+     "Namaste, {name}" in the header and prefill checkout.
+  --------------------------------------------------------------------------- */
+  const AUTH_USERS_KEY = "pasal_users";
+  let authMode = "signin";
+
+  function openAuth(mode) {
+    authMode = mode === "signup" ? "signup" : "signin";
+    applyAuthMode();
+    clearAuthErrors();
+    document.getElementById("authOverlay").classList.add("show");
+    document.getElementById("authOverlay").setAttribute("aria-hidden", "false");
+    setTimeout(function () {
+      const first = document.getElementById(authMode === "signup" ? "authName" : "authPhone");
+      if (first) first.focus();
+    }, 50);
+  }
+
+  function closeAuth() {
+    document.getElementById("authOverlay").classList.remove("show");
+    document.getElementById("authOverlay").setAttribute("aria-hidden", "true");
+  }
+
+  function toggleAuthMode(e) {
+    if (e) e.preventDefault();
+    authMode = authMode === "signup" ? "signin" : "signup";
+    applyAuthMode();
+    clearAuthErrors();
+  }
+
+  function applyAuthMode() {
+    const isSignup = authMode === "signup";
+    document.getElementById("authTitle").textContent = isSignup ? "Sign Up" : "Sign In";
+    document.getElementById("authNameField").style.display = isSignup ? "grid" : "none";
+    document.getElementById("authSubmit").textContent = isSignup ? "→ Sign up" : "→ Sign in";
+    document.getElementById("authToggleWrap").innerHTML = isSignup
+      ? 'Already have an account? <a href="#" onclick="toggleAuthMode(event)">Sign in</a>'
+      : 'First time user? <a href="#" onclick="toggleAuthMode(event)">Sign up</a>';
+  }
+
+  function clearAuthErrors() {
+    ["authName", "authPhone", "authPassword"].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove("invalid");
+    });
+    document.getElementById("authNameNote").textContent = "Please enter your name.";
+    document.getElementById("authPhoneNote").textContent = "Enter a 10-digit mobile number.";
+    document.getElementById("authPasswordNote").textContent = "Password must be at least 4 characters.";
+    document.querySelectorAll(".auth-note").forEach(function (n) { n.classList.remove("show"); });
+  }
+
+  function markAuthInvalid(id, noteId) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("invalid");
+    const note = document.getElementById(noteId);
+    if (note) note.classList.add("show");
+  }
+
+  function loadUsers() {
+    try { return JSON.parse(localStorage.getItem(AUTH_USERS_KEY)) || []; } catch (e) { return []; }
+  }
+
+  function saveUsers(users) {
+    try { localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users)); } catch (e) {}
+  }
+
+  function submitAuth() {
+    clearAuthErrors();
+    const name = document.getElementById("authName").value.trim();
+    const phone = document.getElementById("authPhone").value.replace(/\D/g, "");
+    const password = document.getElementById("authPassword").value;
+
+    let ok = true;
+    if (authMode === "signup" && !name) { markAuthInvalid("authName", "authNameNote"); ok = false; }
+    if (phone.length !== 10) { markAuthInvalid("authPhone", "authPhoneNote"); ok = false; }
+    if (!password || password.length < 4) { markAuthInvalid("authPassword", "authPasswordNote"); ok = false; }
+    if (!ok) return;
+
+    const users = loadUsers();
+    const existing = users.find(function (u) { return u.phone === phone; });
+
+    if (authMode === "signup") {
+      if (existing) {
+        document.getElementById("authPhoneNote").textContent = "An account with this number already exists — sign in instead.";
+        markAuthInvalid("authPhone", "authPhoneNote");
+        return;
+      }
+      users.push({ name: name, phone: phone, password: password });
+      saveUsers(users);
+      localStorage.setItem("pasal_session", JSON.stringify({ name: name, phone: phone }));
+    } else {
+      if (!existing) {
+        document.getElementById("authPhoneNote").textContent = "No account found for this number — try Sign up instead.";
+        markAuthInvalid("authPhone", "authPhoneNote");
+        return;
+      }
+      if (existing.password !== password) {
+        document.getElementById("authPasswordNote").textContent = "Incorrect password.";
+        markAuthInvalid("authPassword", "authPasswordNote");
+        return;
+      }
+      localStorage.setItem("pasal_session", JSON.stringify({ name: existing.name, phone: existing.phone }));
+    }
+
+    window.location.reload();
+  }
+
+  function forgotPassword(e) {
+    if (e) e.preventDefault();
+    alert("This is a demo site, so there's no real password recovery — just sign up again with the same number to reset it.");
+  }
+
+  document.getElementById("authOverlay").addEventListener("click", function (e) {
+    if (e.target === this) closeAuth();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeAuth();
+    if (e.key === "Enter" && document.getElementById("authOverlay").classList.contains("show")) submitAuth();
+  });
 
   document.getElementById("cartCount").textContent = cartCount;
 </script>
