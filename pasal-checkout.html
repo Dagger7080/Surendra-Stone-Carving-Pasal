@@ -918,10 +918,13 @@
      arrives with text labels and no actual files, which is exactly the
      symptom this comment is here to explain if it comes back. Real file
      attachments only make it through as a genuine <form> submission
-     (enctype="multipart/form-data"). Multiple files are sent as several
-     <input type="file" name="attachment"> elements in the same form —
-     that's the field name FormSubmit looks for, and it accepts more than
-     one of them, up to a combined 10MB.
+     (enctype="multipart/form-data"). Each attachment gets its own
+     <input type="file">, with its field name chosen by
+     attachmentFieldName() below — "attachment" for the first, "attachment2"
+     for a second one on the same order — not all of them sharing the literal
+     name "attachment", which in testing corrupted or dropped files when two
+     were sent that way despite FormSubmit's docs suggesting it should work.
+     Combined size across all of an order's attachments stays under 10MB.
 
      Customer receipt — a custom _autoresponse message, not a _cc of the
      shop's own email (see the comment above the `if (email)` block below
@@ -962,6 +965,23 @@
     );
   }
   const SEND_TIMEOUT_MS = 20000;
+
+  /* Field name for the Nth file attachment on an order. Originally every
+     attachment used the literal name "attachment" for all of them (per
+     FormSubmit's own documented example), reasoning that "several file
+     input fields within a form" meant several fields sharing that same
+     name was fine. In practice, on a real order with both a payment
+     screenshot AND the order's .xlsx, that produced a missing screenshot
+     and a corrupted .xlsx — FormSubmit's multipart parsing does not
+     actually cope with two parts sharing one field name, despite what
+     their docs implied. The first attachment on an order keeps the
+     documented, known-good name "attachment"; a second one (only orders
+     with both a QR payment screenshot and the .xlsx have two) gets
+     "attachment2" instead, so no two files on the same order ever share a
+     name. */
+  function attachmentFieldName(index) {
+    return index === 0 ? "attachment" : "attachment" + (index + 1);
+  }
 
   function sendOrderEmail(name, phone, email, address, city, method, orderNo, itemList, attachments, btn) {
     btn.textContent = "Placing order…";
@@ -1097,16 +1117,16 @@
       form.appendChild(field);
     });
 
-    // Each attachment gets its own <input type="file" name="attachment"> —
-    // FormSubmit accepts several file inputs sharing that same field name
-    // and attaches all of them (combined 10MB limit), see the big comment
-    // above sendOrderEmail.
+    // Each attachment gets its own <input type="file">, named via
+    // attachmentFieldName() — "attachment" for the first, "attachment2" for
+    // a second one alongside it. See the comment on attachmentFieldName
+    // (near sendOrderEmail) for why NOT to reuse "attachment" for both.
     if ("DataTransfer" in window) {
-      attachments.forEach(function (att) {
+      attachments.forEach(function (att, i) {
         try {
           const fileInput = document.createElement("input");
           fileInput.type = "file";
-          fileInput.name = "attachment";
+          fileInput.name = attachmentFieldName(i);
           const dt = new DataTransfer();
           dt.items.add(new File([att.blob], att.filename, { type: att.blob.type || "application/octet-stream" }));
           fileInput.files = dt.files;
@@ -1166,7 +1186,7 @@
 
     var body = new FormData();
     Object.keys(fields).forEach(function (key) { body.append(key, fields[key]); });
-    (attachments || []).forEach(function (att) { body.append("attachment", att.blob, att.filename); });
+    (attachments || []).forEach(function (att, i) { body.append(attachmentFieldName(i), att.blob, att.filename); });
 
     // Do not set Content-Type manually — the browser adds the multipart
     // boundary itself; overriding it breaks the upload.
@@ -1226,11 +1246,11 @@
       });
 
       if ("DataTransfer" in window) {
-        (attachments || []).forEach(function (att) {
+        (attachments || []).forEach(function (att, i) {
           try {
             var fileInput = document.createElement("input");
             fileInput.type = "file";
-            fileInput.name = "attachment";
+            fileInput.name = attachmentFieldName(i);
             fileInput.style.display = "none";
             var dt = new DataTransfer();
             dt.items.add(new File([att.blob], att.filename, { type: att.blob.type || "application/octet-stream" }));
