@@ -544,9 +544,25 @@
     }
   }
 
+  /* Same column layout as the Google Sheet order log and the per-order .xlsx
+     attached to each order email (ORDER_ROW_HEADERS in pasal-checkout.html,
+     HEADERS in the Apps Script — see order-log-setup.md). Keeping this
+     identical means a downloaded date-range export can be pasted straight
+     into, or compared line-for-line against, the master log. */
+  const ORDER_ROW_HEADERS = [
+    "S. N", "Order number", "Date", "Full name", "Phone", "Email",
+    "District", "Delivery address", "Payment method",
+    "Item", "Qty", "Unit Price", "Gross Total", "Delivery Charge", "Net Total"
+  ];
+
   /* --------------------------------------------------------------------------
      EXPORT — whatever the table is currently showing (Order list / Daily /
-     Monthly, within the active date range) becomes one .xlsx file.
+     Monthly, within the active date range) becomes one .xlsx file. The Order
+     list export deliberately does NOT use the on-screen aggregated one-
+     row-per-order table — it re-expands back to one row per line item (like
+     filteredRows() already has, straight from the Sheet), re-numbering S. N
+     from 1 within just this export, so the file matches the order log's own
+     format exactly rather than a summarised view of it.
      -------------------------------------------------------------------------- */
   function downloadCurrentView() {
     if (typeof XLSX === "undefined") { alert("The Excel library didn't load — check your internet connection and try again."); return; }
@@ -554,9 +570,13 @@
     let headers, dataRows, sheetName;
 
     if (viewMode === "orders") {
-      headers = ["Order number", "Date", "Full name", "Phone", "District", "Delivery address", "Payment method", "Items", "Total"];
-      dataRows = aggregateOrders(rows).map(function (o) {
-        return [o.orderNo, o.date ? o.date.toLocaleString("en-GB") : "", o.name, o.phone, o.district, o.address, o.payment, o.items.join(", "), o.total];
+      headers = ORDER_ROW_HEADERS;
+      dataRows = rows.map(function (r, i) {
+        return [
+          i + 1, r["Order number"], r["Date"], r["Full name"], r["Phone"], r["Email"],
+          r["District"], r["Delivery address"], r["Payment method"],
+          r["Item"], r["Qty"], r["Unit Price"], r["Gross Total"], r["Delivery Charge"], r["Net Total"]
+        ];
       });
       sheetName = "Orders";
     } else if (viewMode === "daily") {
