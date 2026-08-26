@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Order history download — Surendra Stone Carving</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- SheetJS — builds the downloaded .xlsx file from the JSON the Apps Script hands back. -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --ink: #2A2420; --paper: #E8DFC8; --teal: #8B4226; --teal-dark: #6B3019;
+    --marigold: #A9812C; --muted: #6E6255; --line: #D8CAAE; --card: #F7F1E2;
+    --danger: #A8402B; --danger-soft: #F3E4DC; --success: #4C7A4F;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Karla', sans-serif; background: var(--paper); color: var(--ink);
+    line-height: 1.6; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  h1 { font-family: 'Cinzel', serif; font-size: 22px; margin-bottom: 6px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 28px; max-width: 460px; width: 100%; }
+  .warn {
+    background: var(--danger-soft); color: var(--danger); border-radius: 10px;
+    padding: 12px 14px; font-size: 13px; font-weight: 700; margin-bottom: 20px;
+  }
+  .field { display: grid; gap: 6px; margin-bottom: 14px; }
+  .field label { font-size: 14px; font-weight: 700; }
+  .field input {
+    font-family: inherit; font-size: 15px; padding: 11px 14px;
+    border: 1.5px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
+  }
+  .field input:focus { border-color: var(--teal); outline: none; }
+  .remember { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+  .remember input { width: 16px; height: 16px; accent-color: var(--teal); }
+  button {
+    font-family: inherit; cursor: pointer; width: 100%; border: none; background: var(--teal);
+    color: #fff; padding: 13px; border-radius: 10px; font-weight: 700; font-size: 15px; transition: background 0.15s;
+  }
+  button:hover { background: var(--teal-dark); }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .status { margin-top: 14px; font-size: 14px; display: none; border-radius: 10px; padding: 10px 12px; }
+  .status.show { display: block; }
+  .status.ok { background: #E7F3EE; color: var(--success); }
+  .status.err { background: var(--danger-soft); color: var(--danger); }
+  .hint { font-size: 13px; color: var(--muted); margin-top: 18px; }
+  .hint a { color: var(--teal); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <h1>Download order history</h1>
+  <p style="color:var(--muted); font-size:14px; margin-bottom:18px;">Pulls every order from the Google Sheet log and saves it as one Excel file.</p>
+
+  <div class="warn">
+    This page is not linked from the storefront and has no real login — anyone
+    with this URL and your passphrase can download every customer's order
+    details. Don't share this link, and don't bookmark it somewhere public.
+  </div>
+
+  <div class="field">
+    <label for="sheetUrl">Apps Script Web App URL</label>
+    <input id="sheetUrl" type="text" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+  </div>
+  <div class="field">
+    <label for="secretKey">Passphrase (SECRET_KEY from the script)</label>
+    <input id="secretKey" type="password" placeholder="Your passphrase" autocomplete="off">
+  </div>
+  <label class="remember">
+    <input type="checkbox" id="rememberBox">
+    Remember these on this device (saved in this browser only, plain text)
+  </label>
+
+  <button id="downloadBtn" onclick="downloadOrders()">Download all orders (.xlsx)</button>
+  <div class="status" id="status" role="status"></div>
+
+  <p class="hint">Full setup steps are in <a href="order-log-setup.md">order-log-setup.md</a>. You can also just open the Google Sheet itself and use File → Download → Microsoft Excel.</p>
+</div>
+
+<script>
+  /* Config is entered by hand each visit (or remembered locally, see the
+     checkbox) rather than hardcoded here — this file's source is plain text
+     like any other page on the site, so a hardcoded passphrase would be
+     visible to anyone who viewed the page source. Keeping it out of the
+     file entirely is the only version of this that isn't just obscurity. */
+  const STORAGE_KEY = "pasal_admin_orders_creds";
+
+  (function restoreSaved() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (saved) {
+        document.getElementById("sheetUrl").value = saved.url || "";
+        document.getElementById("secretKey").value = saved.key || "";
+        document.getElementById("rememberBox").checked = true;
+      }
+    } catch (e) {}
+  })();
+
+  function setStatus(text, ok) {
+    const box = document.getElementById("status");
+    box.textContent = text;
+    box.className = "status show " + (ok ? "ok" : "err");
+  }
+
+  /* Reads the Apps Script Web App's doGet via JSONP rather than a plain
+     fetch(). Google Apps Script web apps don't reliably send back the CORS
+     headers fetch() needs to read a cross-origin response — JSONP sidesteps
+     that entirely by loading the response as a <script> (not subject to
+     CORS), the same trick used long before fetch() existed for exactly
+     this kind of cross-origin read. */
+  function fetchOrdersJsonp(url, key) {
+    return new Promise(function (resolve, reject) {
+      const cbName = "pasalOrdersCb_" + Date.now();
+      const script = document.createElement("script");
+      let settled = false;
+
+      function cleanup() {
+        delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      window[cbName] = function (data) {
+        settled = true;
+        cleanup();
+        if (data && data.error) reject(new Error(data.error));
+        else resolve(data);
+      };
+
+      script.onerror = function () {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(new Error("Could not reach that URL. Check it's the right Web App URL and that you're online."));
+      };
+
+      const sep = url.indexOf("?") === -1 ? "?" : "&";
+      script.src = url + sep + "key=" + encodeURIComponent(key) + "&callback=" + cbName;
+      document.body.appendChild(script);
+
+      setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(new Error("Timed out waiting for a response."));
+      }, 15000);
+    });
+  }
+
+  function downloadOrders() {
+    const url = document.getElementById("sheetUrl").value.trim();
+    const key = document.getElementById("secretKey").value;
+    const remember = document.getElementById("rememberBox").checked;
+    const btn = document.getElementById("downloadBtn");
+
+    if (!url || !key) {
+      setStatus("Enter both the Web App URL and your passphrase first.", false);
+      return;
+    }
+    if (typeof XLSX === "undefined") {
+      setStatus("The Excel library didn't load — check your internet connection and try again.", false);
+      return;
+    }
+
+    try {
+      if (remember) localStorage.setItem(STORAGE_KEY, JSON.stringify({ url: url, key: key }));
+      else localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {}
+
+    btn.disabled = true;
+    btn.textContent = "Fetching orders…";
+    setStatus("", true);
+    document.getElementById("status").classList.remove("show");
+
+    fetchOrdersJsonp(url, key)
+      .then(function (rows) {
+        if (!Array.isArray(rows) || rows.length === 0) {
+          setStatus("No orders found yet — the Sheet's Orders tab is empty.", false);
+          return;
+        }
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "All orders");
+        const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+        const stamp = new Date().toISOString().slice(0, 10);
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "pasal-orders-" + stamp + ".xlsx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+
+        setStatus("Downloaded " + rows.length + " order" + (rows.length === 1 ? "" : "s") + " as pasal-orders-" + stamp + ".xlsx.", true);
+      })
+      .catch(function (err) {
+        setStatus("Couldn't download orders: " + err.message, false);
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.textContent = "Download all orders (.xlsx)";
+      });
+  }
+</script>
+
+</body>
+</html>

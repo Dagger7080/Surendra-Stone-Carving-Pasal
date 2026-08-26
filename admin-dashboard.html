@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin dashboard — Surendra Stone Carving</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- SheetJS — used only for the "Download this view as Excel" button. -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --ink: #2A2420; --paper: #E8DFC8; --teal: #8B4226; --teal-dark: #6B3019;
+    --marigold: #A9812C; --marigold-soft: #EFE4C4; --muted: #6E6255; --line: #D8CAAE;
+    --card: #F7F1E2; --danger: #A8402B; --danger-soft: #F3E4DC; --success: #4C7A4F;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Karla', sans-serif; background: var(--paper); color: var(--ink);
+    line-height: 1.5; min-height: 100vh;
+  }
+  h1, h2 { font-family: 'Cinzel', serif; letter-spacing: 0.2px; }
+  button, select, input { font-family: inherit; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- Login screen ---------- */
+  #loginScreen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 28px; max-width: 440px; width: 100%; }
+  .panel h1 { font-size: 22px; margin-bottom: 6px; }
+  .panel > p.sub { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+  .warn {
+    background: var(--danger-soft); color: var(--danger); border-radius: 10px;
+    padding: 12px 14px; font-size: 13px; font-weight: 700; margin-bottom: 20px;
+  }
+  .field { display: grid; gap: 6px; margin-bottom: 14px; }
+  .field label { font-size: 14px; font-weight: 700; }
+  .field input {
+    font-size: 15px; padding: 11px 14px; border: 1.5px solid var(--line);
+    border-radius: 10px; background: #fff; color: var(--ink); width: 100%;
+  }
+  .field input:focus { border-color: var(--teal); outline: none; }
+  .remember { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+  .remember input { width: 16px; height: 16px; accent-color: var(--teal); }
+  .btn {
+    cursor: pointer; border: none; background: var(--teal); color: #fff;
+    padding: 12px 18px; border-radius: 10px; font-weight: 700; font-size: 14px; transition: background 0.15s;
+  }
+  .btn:hover { background: var(--teal-dark); }
+  .btn:disabled { opacity: 0.6; cursor: default; }
+  .btn.outline { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+  .btn.outline:hover { border-color: var(--teal); color: var(--teal); background: transparent; }
+  .btn.small { padding: 8px 14px; font-size: 13px; }
+  #loginBtn { width: 100%; }
+  .status { margin-top: 14px; font-size: 13px; display: none; border-radius: 10px; padding: 10px 12px; }
+  .status.show { display: block; }
+  .status.ok { background: #E7F3EE; color: var(--success); }
+  .status.err { background: var(--danger-soft); color: var(--danger); }
+
+  /* ---------- Dashboard ---------- */
+  #dashboard { display: none; padding: 24px 0 60px; }
+  .dash-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .dash-header h1 { font-size: 24px; }
+  .dash-header .meta { font-size: 13px; color: var(--muted); }
+
+  .controls {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px; display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 20px;
+  }
+  .control-group { display: grid; gap: 6px; }
+  .control-group span.lbl { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
+  .seg { display: flex; border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button {
+    cursor: pointer; border: none; background: #fff; color: var(--ink); padding: 9px 14px;
+    font-size: 13px; font-weight: 700; border-right: 1px solid var(--line);
+  }
+  .seg button:last-child { border-right: none; }
+  .seg button.active { background: var(--teal); color: #fff; }
+  .control-group input[type="date"] {
+    padding: 9px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font-size: 13px;
+  }
+  .range-row { display: flex; gap: 8px; align-items: center; }
+
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .stat-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .stat-card .lbl { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 6px; }
+  .stat-card .val { font-size: 24px; font-weight: 700; color: var(--teal); font-family: 'Cinzel', serif; }
+
+  .table-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+  .table-scroll { overflow-x: auto; }
+  table.data { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
+  table.data th {
+    background: #2E4A6B; color: #fff; text-align: left; padding: 10px 12px; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap;
+  }
+  table.data td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.data tr:last-child td { border-bottom: none; }
+  table.data tr:hover td { background: rgba(139,66,38,0.05); }
+  .empty-row td { text-align: center; color: var(--muted); padding: 30px 12px; }
+
+  .actions-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .hint { font-size: 12px; color: var(--muted); }
+
+  @media (max-width: 720px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 440px) {
+    .cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ======================= LOGIN ======================= -->
+<div id="loginScreen">
+  <div class="panel">
+    <h1>Admin login</h1>
+    <p class="sub">Surendra Stone Carving — order &amp; sales dashboard</p>
+    <div class="warn">
+      This page is not linked from the storefront and has no real user
+      accounts — it's a single shared passphrase. Don't share this URL, and
+      don't bookmark it somewhere public.
+    </div>
+    <div class="field">
+      <label for="loginKey">Passphrase</label>
+      <input id="loginKey" type="password" placeholder="Your passphrase" autocomplete="off">
+    </div>
+    <label class="remember">
+      <input type="checkbox" id="rememberBox">
+      Stay logged in on this device (saved in this browser only, plain text)
+    </label>
+    <button class="btn" id="loginBtn" onclick="login()">Log in</button>
+    <div class="status" id="loginStatus" role="status"></div>
+  </div>
+</div>
+
+<!-- ======================= DASHBOARD ======================= -->
+<div id="dashboard">
+  <div class="wrap">
+    <div class="dash-header">
+      <div>
+        <h1>Orders &amp; sales</h1>
+        <div class="meta" id="lastUpdated">—</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn outline small" onclick="refreshData()">↻ Refresh</button>
+        <button class="btn outline small" onclick="logout()">Log out</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <span class="lbl">Date range</span>
+        <div class="seg" id="rangeSeg">
+          <button data-range="today" class="active" onclick="setRange('today')">Today</button>
+          <button data-range="month" onclick="setRange('month')">This month</button>
+          <button data-range="all" onclick="setRange('all')">All time</button>
+          <button data-range="custom" onclick="setRange('custom')">Custom</button>
+        </div>
+      </div>
+      <div class="control-group" id="customRangeGroup" style="display:none;">
+        <span class="lbl">From — To</span>
+        <div class="range-row">
+          <input type="date" id="fromDate">
+          <input type="date" id="toDate">
+          <button class="btn small" onclick="applyCustomRange()">Apply</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <span class="lbl">View</span>
+        <div class="seg" id="viewSeg">
+          <button data-view="orders" class="active" onclick="setView('orders')">Order list</button>
+          <button data-view="daily" onclick="setView('daily')">Daily</button>
+          <button data-view="monthly" onclick="setView('monthly')">Monthly</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="stat-card"><div class="lbl">Orders</div><div class="val" id="statOrders">0</div></div>
+      <div class="stat-card"><div class="lbl">Sales</div><div class="val" id="statSales">Rs 0</div></div>
+      <div class="stat-card"><div class="lbl">Items sold</div><div class="val" id="statItems">0</div></div>
+      <div class="stat-card"><div class="lbl">Avg order value</div><div class="val" id="statAvg">Rs 0</div></div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-scroll">
+        <table class="data" id="dataTable">
+          <thead><tr id="tableHead"></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="actions-row">
+      <span class="hint" id="rangeHint"></span>
+      <button class="btn" onclick="downloadCurrentView()">Download this view (.xlsx)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* --------------------------------------------------------------------------
+     Same Apps Script Web App as pasal-checkout.html / admin-orders.html (see
+     order-log-setup.md) — paste the same deployment URL here. The URL alone
+     isn't sensitive (reaching it does nothing without the passphrase below,
+     which the Apps Script checks against its own SECRET_KEY before handing
+     back any data), so unlike the passphrase it's fine to hardcode.
+     -------------------------------------------------------------------------- */
+  const SHEET_WEBAPP_URL = "";   // <- paste your Apps Script Web App URL here, see order-log-setup.md
+
+  const REMEMBER_KEY = "pasal_admin_dashboard_key";
+  let sessionKey = null;     // the passphrase, held in memory for this login
+  let allRows = [];          // every row from the Sheet, with a parsed _date added
+  let rangeMode = "today";   // "today" | "month" | "all" | "custom"
+  let customFrom = null;
+  let customTo = null;
+  let viewMode = "orders";   // "orders" | "daily" | "monthly"
+
+  /* ---------------------------------------------------------------------------
+     Fetching — identical JSONP trick used in admin-orders.html: Google Apps
+     Script web apps don't reliably send back the CORS headers fetch() needs
+     to read a cross-origin response, so this loads the response as a
+     <script> instead (not subject to CORS), the same pattern used for
+     cross-origin reads long before fetch() existed.
+  --------------------------------------------------------------------------- */
+  function fetchOrdersJsonp(url, key) {
+    return new Promise(function (resolve, reject) {
+      const cbName = "pasalDashCb_" + Date.now();
+      const script = document.createElement("script");
+      let settled = false;
+
+      function cleanup() {
+        delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      window[cbName] = function (data) {
+        settled = true;
+        cleanup();
+        if (data && data.error) reject(new Error(data.error));
+        else resolve(data);
+      };
+
+      script.onerror = function () {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(new Error("Could not reach the order log. Check SHEET_WEBAPP_URL and your connection."));
+      };
+
+      const sep = url.indexOf("?") === -1 ? "?" : "&";
+      script.src = url + sep + "key=" + encodeURIComponent(key) + "&callback=" + cbName;
+      document.body.appendChild(script);
+
+      setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(new Error("Timed out waiting for a response."));
+      }, 15000);
+    });
+  }
+
+  /* "26/08/2026, 15:43:00" -> Date. Matches formatOrderDate() in
+     pasal-checkout.html (en-GB, day/month/year first). Interpreted in
+     whatever timezone the browser viewing this dashboard is in — fine as
+     long as that's the same timezone the shop operates in. */
+  function parseSheetDate(str) {
+    if (!str) return null;
+    const m = String(str).match(/(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s*(\d{1,2}):(\d{2}):(\d{2})/);
+    if (!m) return null;
+    return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]), Number(m[4]), Number(m[5]), Number(m[6]));
+  }
+
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function dayKey(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function monthKey(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1); }
+  function fmtMoney(n) { return "Rs " + (Number(n) || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
+  function fmtDay(d) { return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }); }
+  function fmtMonth(d) { return d.toLocaleDateString("en-GB", { month: "long", year: "numeric" }); }
+
+  /* --------------------------------------------------------------------------
+     LOGIN
+     -------------------------------------------------------------------------- */
+  function setLoginStatus(text, ok) {
+    const box = document.getElementById("loginStatus");
+    box.textContent = text;
+    box.className = "status show " + (ok ? "ok" : "err");
+  }
+
+  function login() {
+    const key = document.getElementById("loginKey").value;
+    const remember = document.getElementById("rememberBox").checked;
+    if (!key) { setLoginStatus("Enter your passphrase.", false); return; }
+    if (!SHEET_WEBAPP_URL) { setLoginStatus("SHEET_WEBAPP_URL isn't set in this page yet — see order-log-setup.md.", false); return; }
+    if (typeof XLSX === "undefined") { setLoginStatus("A required script didn't load — check your internet connection and try again.", false); return; }
+
+    const btn = document.getElementById("loginBtn");
+    btn.disabled = true;
+    btn.textContent = "Logging in…";
+
+    fetchOrdersJsonp(SHEET_WEBAPP_URL, key)
+      .then(function (rows) {
+        sessionKey = key;
+        try {
+          if (remember) localStorage.setItem(REMEMBER_KEY, key);
+          else { localStorage.removeItem(REMEMBER_KEY); sessionStorage.setItem(REMEMBER_KEY, key); }
+        } catch (e) {}
+        ingestRows(rows);
+        showDashboard();
+      })
+      .catch(function (err) {
+        setLoginStatus("Couldn't log in: " + err.message, false);
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.textContent = "Log in";
+      });
+  }
+
+  function logout() {
+    sessionKey = null;
+    allRows = [];
+    try { localStorage.removeItem(REMEMBER_KEY); sessionStorage.removeItem(REMEMBER_KEY); } catch (e) {}
+    document.getElementById("dashboard").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("loginKey").value = "";
+  }
+
+  function ingestRows(rows) {
+    allRows = (Array.isArray(rows) ? rows : []).map(function (r) {
+      r._date = parseSheetDate(r["Date"]);
+      return r;
+    });
+    document.getElementById("lastUpdated").textContent = "Last updated " + new Date().toLocaleTimeString("en-GB");
+  }
+
+  function showDashboard() {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    render();
+  }
+
+  function refreshData() {
+    if (!sessionKey) return;
+    fetchOrdersJsonp(SHEET_WEBAPP_URL, sessionKey)
+      .then(function (rows) { ingestRows(rows); render(); })
+      .catch(function (err) { alert("Couldn't refresh: " + err.message); });
+  }
+
+  // Auto-login if a passphrase was remembered on this device/tab.
+  (function tryAutoLogin() {
+    let saved = null;
+    try { saved = localStorage.getItem(REMEMBER_KEY) || sessionStorage.getItem(REMEMBER_KEY); } catch (e) {}
+    if (!saved || !SHEET_WEBAPP_URL) return;
+    document.getElementById("loginKey").value = saved;
+    document.getElementById("rememberBox").checked = !!(function () { try { return localStorage.getItem(REMEMBER_KEY); } catch (e) { return null; } })();
+    setLoginStatus("Logging you back in…", true);
+    fetchOrdersJsonp(SHEET_WEBAPP_URL, saved)
+      .then(function (rows) { sessionKey = saved; ingestRows(rows); showDashboard(); })
+      .catch(function () {
+        try { localStorage.removeItem(REMEMBER_KEY); sessionStorage.removeItem(REMEMBER_KEY); } catch (e) {}
+      });
+  })();
+
+  /* --------------------------------------------------------------------------
+     RANGE + VIEW CONTROLS
+     -------------------------------------------------------------------------- */
+  function setRange(mode) {
+    rangeMode = mode;
+    document.querySelectorAll("#rangeSeg button").forEach(function (b) { b.classList.toggle("active", b.dataset.range === mode); });
+    document.getElementById("customRangeGroup").style.display = mode === "custom" ? "grid" : "none";
+    if (mode !== "custom") render();
+  }
+
+  function applyCustomRange() {
+    customFrom = document.getElementById("fromDate").value || null;
+    customTo = document.getElementById("toDate").value || null;
+    if (!customFrom || !customTo) { alert("Pick both a From and a To date."); return; }
+    render();
+  }
+
+  function setView(mode) {
+    viewMode = mode;
+    document.querySelectorAll("#viewSeg button").forEach(function (b) { b.classList.toggle("active", b.dataset.view === mode); });
+    render();
+  }
+
+  function getRangeBounds() {
+    const now = new Date();
+    if (rangeMode === "today") {
+      return {
+        start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0),
+        end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+      };
+    }
+    if (rangeMode === "month") {
+      return {
+        start: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0),
+        end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+      };
+    }
+    if (rangeMode === "custom" && customFrom && customTo) {
+      const f = customFrom.split("-").map(Number);
+      const t = customTo.split("-").map(Number);
+      return {
+        start: new Date(f[0], f[1] - 1, f[2], 0, 0, 0),
+        end: new Date(t[0], t[1] - 1, t[2], 23, 59, 59)
+      };
+    }
+    return null;   // "all" (or custom picked but not applied yet)
+  }
+
+  function filteredRows() {
+    const bounds = getRangeBounds();
+    if (!bounds) return allRows;
+    return allRows.filter(function (r) { return r._date && r._date >= bounds.start && r._date <= bounds.end; });
+  }
+
+  /* --------------------------------------------------------------------------
+     AGGREGATION
+     Each Sheet row is one line item, and its Net Total already includes that
+     row's own share of the order's delivery charge (see computeDeliveryShares
+     in pasal-checkout.html) — so summing Net Total across any set of rows,
+     grouped however you like, always gives the correct sales figure with no
+     double-counting or need to de-duplicate delivery charges.
+     -------------------------------------------------------------------------- */
+  function aggregateOrders(rows) {
+    const map = new Map();
+    rows.forEach(function (r) {
+      const key = r["Order number"];
+      if (!map.has(key)) {
+        map.set(key, {
+          orderNo: key, date: r._date, name: r["Full name"], phone: r["Phone"],
+          district: r["District"], address: r["Delivery address"],
+          payment: r["Payment method"], items: [], total: 0
+        });
+      }
+      const o = map.get(key);
+      o.items.push(r["Qty"] + "x " + r["Item"]);
+      o.total += Number(r["Net Total"]) || 0;
+      if (r._date && (!o.date || r._date < o.date)) o.date = r._date;
+    });
+    return Array.from(map.values()).sort(function (a, b) { return (b.date || 0) - (a.date || 0); });
+  }
+
+  function aggregateByBucket(rows, keyFn, labelFn) {
+    const map = new Map();
+    rows.forEach(function (r) {
+      if (!r._date) return;
+      const k = keyFn(r._date);
+      if (!map.has(k)) map.set(k, { key: k, label: labelFn(r._date), orderSet: new Set(), sales: 0 });
+      const b = map.get(k);
+      b.orderSet.add(r["Order number"]);
+      b.sales += Number(r["Net Total"]) || 0;
+    });
+    return Array.from(map.values())
+      .map(function (b) { return { key: b.key, label: b.label, orders: b.orderSet.size, sales: b.sales }; })
+      .sort(function (a, b) { return b.key.localeCompare(a.key); });
+  }
+
+  /* --------------------------------------------------------------------------
+     RENDERING — built with DOM calls (createElement + textContent), not
+     innerHTML with interpolated strings: customer name/address/phone come
+     straight from the checkout form with no sanitisation, so treating them
+     as trusted HTML here would be a stored-XSS hole. textContent never
+     interprets its input as markup, so this is safe regardless of what a
+     customer typed in.
+     -------------------------------------------------------------------------- */
+  function clearTable() {
+    document.getElementById("tableHead").innerHTML = "";
+    document.getElementById("tableBody").innerHTML = "";
+  }
+  function addHeaderCells(labels) {
+    const tr = document.getElementById("tableHead");
+    labels.forEach(function (l) {
+      const th = document.createElement("th");
+      th.textContent = l;
+      tr.appendChild(th);
+    });
+  }
+  function addRow(values) {
+    const tr = document.createElement("tr");
+    values.forEach(function (v) {
+      const td = document.createElement("td");
+      td.textContent = v;
+      tr.appendChild(td);
+    });
+    document.getElementById("tableBody").appendChild(tr);
+  }
+  function addEmptyRow(colspan, text) {
+    const tr = document.createElement("tr");
+    tr.className = "empty-row";
+    const td = document.createElement("td");
+    td.colSpan = colspan;
+    td.textContent = text;
+    tr.appendChild(td);
+    document.getElementById("tableBody").appendChild(tr);
+  }
+
+  function render() {
+    const rows = filteredRows();
+
+    // Summary cards
+    const totalSales = rows.reduce(function (s, r) { return s + (Number(r["Net Total"]) || 0); }, 0);
+    const totalItems = rows.reduce(function (s, r) { return s + (Number(r["Qty"]) || 0); }, 0);
+    const orderNos = new Set(rows.map(function (r) { return r["Order number"]; }));
+    document.getElementById("statOrders").textContent = orderNos.size.toLocaleString("en-IN");
+    document.getElementById("statSales").textContent = fmtMoney(totalSales);
+    document.getElementById("statItems").textContent = totalItems.toLocaleString("en-IN");
+    document.getElementById("statAvg").textContent = fmtMoney(orderNos.size ? totalSales / orderNos.size : 0);
+
+    const bounds = getRangeBounds();
+    document.getElementById("rangeHint").textContent = bounds
+      ? "Showing " + fmtDay(bounds.start) + " – " + fmtDay(bounds.end)
+      : "Showing all orders ever placed";
+
+    clearTable();
+    if (viewMode === "orders") {
+      addHeaderCells(["Order number", "Date", "Full name", "Phone", "District", "Delivery address", "Payment method", "Items", "Total"]);
+      const orders = aggregateOrders(rows);
+      if (!orders.length) { addEmptyRow(9, "No orders in this range."); return; }
+      orders.forEach(function (o) {
+        addRow([
+          o.orderNo, o.date ? o.date.toLocaleString("en-GB") : "—", o.name, o.phone,
+          o.district, o.address, o.payment, o.items.join(", "), fmtMoney(o.total)
+        ]);
+      });
+    } else if (viewMode === "daily") {
+      addHeaderCells(["Date", "Orders", "Sales"]);
+      const buckets = aggregateByBucket(rows, dayKey, fmtDay);
+      if (!buckets.length) { addEmptyRow(3, "No orders in this range."); return; }
+      buckets.forEach(function (b) { addRow([b.label, b.orders, fmtMoney(b.sales)]); });
+    } else {
+      addHeaderCells(["Month", "Orders", "Sales"]);
+      const buckets = aggregateByBucket(rows, monthKey, fmtMonth);
+      if (!buckets.length) { addEmptyRow(3, "No orders in this range."); return; }
+      buckets.forEach(function (b) { addRow([b.label, b.orders, fmtMoney(b.sales)]); });
+    }
+  }
+
+  /* --------------------------------------------------------------------------
+     EXPORT — whatever the table is currently showing (Order list / Daily /
+     Monthly, within the active date range) becomes one .xlsx file.
+     -------------------------------------------------------------------------- */
+  function downloadCurrentView() {
+    if (typeof XLSX === "undefined") { alert("The Excel library didn't load — check your internet connection and try again."); return; }
+    const rows = filteredRows();
+    let headers, dataRows, sheetName;
+
+    if (viewMode === "orders") {
+      headers = ["Order number", "Date", "Full name", "Phone", "District", "Delivery address", "Payment method", "Items", "Total"];
+      dataRows = aggregateOrders(rows).map(function (o) {
+        return [o.orderNo, o.date ? o.date.toLocaleString("en-GB") : "", o.name, o.phone, o.district, o.address, o.payment, o.items.join(", "), o.total];
+      });
+      sheetName = "Orders";
+    } else if (viewMode === "daily") {
+      headers = ["Date", "Orders", "Sales"];
+      dataRows = aggregateByBucket(rows, dayKey, fmtDay).map(function (b) { return [b.label, b.orders, b.sales]; });
+      sheetName = "Daily sales";
+    } else {
+      headers = ["Month", "Orders", "Sales"];
+      dataRows = aggregateByBucket(rows, monthKey, fmtMonth).map(function (b) { return [b.label, b.orders, b.sales]; });
+      sheetName = "Monthly sales";
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet([headers].concat(dataRows));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "pasal-" + viewMode + "-" + stamp + ".xlsx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  }
+
+  document.getElementById("loginKey").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") login();
+  });
+</script>
+
+</body>
+</html>

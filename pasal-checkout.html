@@ -7,6 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Karla:wght@400;500;700&family=Mukta:wght@600&display=swap" rel="stylesheet">
+<!-- SheetJS — builds the real .xlsx file attached to each order email and used
+     by admin-orders.html to download the full order history. Loaded from a
+     CDN, so the Excel features quietly no-op (order still sends by email) if
+     this fails to load — see makeOrderExcelAttachment() below. -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root {
     --ink: #2A2420;
@@ -437,6 +442,51 @@
   const FORM_TARGET = FORMSUBMIT_ID || STORE_EMAIL;
   const STORE_PHONE = "98XXXXXXXX";
 
+  /* --------------------------------------------------------------------------
+     ORDER LOG — Google Sheet (the master record, powers admin-orders.html)
+     Every order is also sent to a Google Sheet you own, so there is one
+     running list of every order ever placed — separate from the per-order
+     Excel file attached to each email below. Open the Sheet any time, or use
+     admin-orders.html (not linked from the storefront — see that file) to
+     download the whole history as one .xlsx with one click.
+
+     One-time setup — full copy-paste steps in order-log-setup.md, next to
+     this file: create a Google Sheet, paste in the Apps Script from that
+     file, deploy it as a Web App (Execute as: Me, Who has access: Anyone),
+     then paste the deployment URL below. Until it's filled in, this is
+     silently skipped — orders still go out by email exactly as before.
+     -------------------------------------------------------------------------- */
+  const SHEET_WEBAPP_URL = "";   // <- paste your Apps Script Web App URL here, see order-log-setup.md
+
+  /* Fire-and-forget: Google Apps Script web apps don't send back the CORS
+     headers a normal fetch() needs to read a response, so this uses
+     mode:"no-cors" and never looks at what comes back. That's fine — the
+     Sheet is a convenience log, not the order record of truth (the email is
+     that), so a failed or slow write to the Sheet must never hold up or
+     fail the order itself. */
+  function logOrderToSheet(orderNo, dateStr, name, phone, email, address, city, paymentLabel, cartItems, delivery) {
+    if (!SHEET_WEBAPP_URL) return;
+    try {
+      const body = new URLSearchParams({
+        orderNo: orderNo,
+        dateStr: dateStr,
+        name: name,
+        phone: phone,
+        email: email,
+        address: address,
+        city: city,
+        payment: paymentLabel,
+        // One row per item on the Sheet side too (see ORDER_ROW_HEADERS) —
+        // the Apps Script (order-log-setup.md) appends one row per entry here.
+        itemsJson: JSON.stringify(cartItems.map(it => ({ name: it.name, qty: it.qty, price: it.price }))),
+        deliveryCharge: String(delivery)
+      });
+      fetch(SHEET_WEBAPP_URL, { method: "POST", mode: "no-cors", body: body });
+    } catch (e) {
+      // Never let a logging failure interrupt placing the order.
+    }
+  }
+
   /* Order numbering — sequential, not random.
      ORDER_START_AT is the number the very first order gets. If you have already
      taken orders by hand, set it to your next number and it carries on from there.
@@ -462,6 +512,94 @@
   ];
 
   const fmt = n => "Rs " + n.toLocaleString("en-IN");
+
+  /* Shared by the Sheet log and the per-order Excel file below, so both show
+     the exact same timestamp for a given order. en-GB gives "26/08/2026,
+     15:43:00" — day/month/year first, comma, 24-hour time. */
+  function formatOrderDate() {
+    return new Date().toLocaleString("en-GB", { timeZone: "Asia/Kathmandu", hour12: false });
+  }
+
+  /* One shared column layout, used by the per-order Excel file below AND by
+     the Google Sheet log (see order-log-setup.md) — one row per line item,
+     not one row per order, so a 2-item order becomes 2 rows that repeat the
+     order-level details (name, address, etc.) and differ only in the item
+     columns. Delivery Charge is the order's total delivery fee split evenly
+     across its line items (see computeDeliveryShares), not repeated in full
+     on every row — otherwise summing that column across an order would
+     overcount the delivery fee once per item. Net Total is each row's own
+     Gross Total plus that row's own share of the delivery fee. */
+  const ORDER_ROW_HEADERS = [
+    "S. N", "Order number", "Date", "Full name", "Phone", "Email",
+    "District", "Delivery address", "Payment method",
+    "Item", "Qty", "Unit Price", "Gross Total", "Delivery Charge", "Net Total"
+  ];
+
+  /* Splits a delivery fee evenly across `count` line items, rounded to
+     paisa (2 decimals). The last share absorbs whatever the rounding left
+     over, so the shares always sum back to exactly `delivery` — e.g. Rs 100
+     across 3 items becomes 33.33, 33.33, 33.34, not 33.33 x3 = 99.99. */
+  function computeDeliveryShares(delivery, count) {
+    if (!count) return [];
+    const shares = [];
+    let allocated = 0;
+    for (let i = 0; i < count - 1; i++) {
+      const share = Number((delivery / count).toFixed(2));
+      shares.push(share);
+      allocated += share;
+    }
+    shares.push(Number((delivery - allocated).toFixed(2)));
+    return shares;
+  }
+
+  function buildOrderRows(orderNo, dateStr, name, phone, email, address, city, paymentLabel, cartItems, delivery) {
+    const shares = computeDeliveryShares(delivery, cartItems.length);
+    return cartItems.map(function (it, i) {
+      const gross = it.qty * it.price;
+      const share = shares[i];
+      return [
+        i + 1, orderNo, dateStr, name, phone, email || "—", city, address, paymentLabel,
+        it.name, it.qty, it.price, gross, share, gross + share
+      ];
+    });
+  }
+
+  /* --------------------------------------------------------------------------
+     ORDER EXCEL FILE — a real .xlsx built in the browser for this one order,
+     attached to the order email below (see makeOrderExcelAttachment). Uses
+     SheetJS (loaded in <head>); if that failed to load — offline, CDN
+     blocked — this quietly returns null and the order still sends by email,
+     just without the spreadsheet attached.
+     -------------------------------------------------------------------------- */
+  function buildOrderWorkbook(orderNo, dateStr, name, phone, email, address, city, paymentLabel, cartItems, delivery) {
+    const rows = [ORDER_ROW_HEADERS].concat(
+      buildOrderRows(orderNo, dateStr, name, phone, email, address, city, paymentLabel, cartItems, delivery)
+    );
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [
+      { wch: 5 }, { wch: 12 }, { wch: 18 }, { wch: 20 }, { wch: 13 }, { wch: 22 },
+      { wch: 12 }, { wch: 26 }, { wch: 18 }, { wch: 20 }, { wch: 6 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Order " + orderNo);
+    return wb;
+  }
+
+  function makeOrderExcelAttachment(orderNo, dateStr, name, phone, email, address, city, paymentLabel, cartItems, delivery) {
+    if (typeof XLSX === "undefined") {
+      console.warn("[Excel] SheetJS did not load — order will send without the .xlsx attachment.");
+      return null;
+    }
+    try {
+      const wb = buildOrderWorkbook(orderNo, dateStr, name, phone, email, address, city, paymentLabel, cartItems, delivery);
+      const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      return { blob: blob, filename: "order-" + orderNo + ".xlsx", kind: "excel" };
+    } catch (e) {
+      console.warn("[Excel] Could not build the order spreadsheet:", e);
+      return null;
+    }
+  }
 
   const CART_KEY = "pasal_cart";
   const PENDING_KEY = "pasal_pending_order";   // survives the FormSubmit round-trip, see resumeAfterRedirect
@@ -731,17 +869,32 @@
     }
     const orderNo = reserveOrderNo();
     const itemList = cart.map(it => it.qty + " x " + it.name + " (" + fmt(it.price * it.qty) + ")").join("\n");
+    const subtotal = cart.reduce((s, it) => s + it.price * it.qty, 0);
+    const delivery = grandTotal - subtotal;
+    const dateStr = formatOrderDate();
+    const paymentLabel = method === "qr" ? "Online payment (QR)" : "Cash on delivery";
+
+    // Best-effort row(s) in the Google Sheet order log — see SHEET_WEBAPP_URL
+    // above. Fired immediately and never awaited, so it can't delay or
+    // block the order itself (the email below is what matters).
+    logOrderToSheet(orderNo, dateStr, name, phone, email, address, city, paymentLabel, cart, delivery);
 
     const btn = document.querySelector(".place-btn");
     btn.disabled = true;
     btn.textContent = "Placing order…";
 
-    // The compressed screenshot rides along as a real file attachment on the
-    // order email — see sendOrderEmail below. No third-party image host needed.
-    const attachment = (method === "qr" && screenshotBlob)
-      ? { blob: screenshotBlob, filename: "payment-screenshot-" + orderNo + ".jpg" }
-      : null;
-    sendOrderEmail(name, phone, email, address, city, method, orderNo, itemList, attachment, btn);
+    // Two possible file attachments ride along as real files on the order
+    // email — see sendOrderEmail below. No third-party file host needed for
+    // either: the compressed payment screenshot, and a genuine .xlsx built
+    // for this order.
+    const attachments = [];
+    if (method === "qr" && screenshotBlob) {
+      attachments.push({ blob: screenshotBlob, filename: "payment-screenshot-" + orderNo + ".jpg", kind: "screenshot" });
+    }
+    const excelAttachment = makeOrderExcelAttachment(orderNo, dateStr, name, phone, email, address, city, paymentLabel, cart, delivery);
+    if (excelAttachment) attachments.push(excelAttachment);
+
+    sendOrderEmail(name, phone, email, address, city, method, orderNo, itemList, attachments, btn);
   }
 
   /* ---------------------------------------------------------------------------
@@ -759,43 +912,44 @@
      One-time setup: place a test order, open the store inbox, click the
      FormSubmit activation link. After that every order is delivered.
 
-     Payment screenshot: FormSubmit's /ajax/ endpoint happily accepts a
-     multipart body and reports success, but it silently drops any file
-     field — the order arrives with the "Payment_screenshot" text label and
-     no picture, which is exactly the symptom this comment is here to explain
-     if it comes back. Real file attachments only make it through as a
-     genuine <form> submission (enctype="multipart/form-data").
+     File attachments (payment screenshot, and the order's own .xlsx file):
+     FormSubmit's /ajax/ endpoint happily accepts a multipart body and
+     reports success, but it silently drops any file field — the order
+     arrives with text labels and no actual files, which is exactly the
+     symptom this comment is here to explain if it comes back. Real file
+     attachments only make it through as a genuine <form> submission
+     (enctype="multipart/form-data"). Multiple files are sent as several
+     <input type="file" name="attachment"> elements in the same form —
+     that's the field name FormSubmit looks for, and it accepts more than
+     one of them, up to a combined 10MB.
 
-     Customer thank-you email — why this took three tries to get right:
-       Attempt 1: send with the rest of the order via /ajax/. FormSubmit's
-       docs say _autoresponse never fires over AJAX, full stop — the shop's
-       copy arrived, the customer's never could.
-       Attempt 2: switch to a genuine <form> POST, but keep it invisible via
-       a hidden iframe (so the page never has to leave), with _captcha:"false"
-       so that silent background POST wouldn't get stuck behind a challenge
-       nobody is there to solve. That satisfied "genuine form POST" but not
-       FormSubmit's OTHER hard requirement: "autoresponse won't work with
-       forms that are disabled reCAPTCHA" — so a second, invisible, captcha
-       -enabled copy was fired afterwards purely to trigger the autoresponse.
-       In testing that copy still never arrived — most likely FormSubmit's
-       captcha step needs an actual visitor to resolve it, and a hidden
-       iframe has nobody in it to do that, so the copy silently stalled.
-       Attempt 3 (current): stop trying to do this invisibly. Whenever the
-       customer gave an email or attached a payment screenshot, the order now
-       submits as a REAL, visible, top-level form POST straight to FormSubmit
-       — not to a hidden iframe — with reCAPTCHA left ON. A real visitor is
-       in the tab if FormSubmit ever needs anything from them, and this is
-       FormSubmit's own documented, officially-supported way of using
-       _autoresponse. The browser briefly leaves this page and FormSubmit
-       redirects it straight back (via the `_next` field) once the order is
-       in; resumeAfterRedirect() below picks the order back up on return and
-       shows the normal success screen, so it still reads as "stayed on the
-       page placing an order" with one quick flash in between.
-       Orders with NEITHER a screenshot NOR a customer email still use the
-       fast, fully invisible AJAX path below — there's no autoresponse to
-       trigger, so there's nothing reCAPTCHA-shaped to work around.
-       NOTE: `_next` must be an http(s) URL, so this path only works once the
-       page is on its real hosted address — not when opened as a local file.
+     Customer receipt — a custom _autoresponse message, not a _cc of the
+     shop's own email (see the comment above the `if (email)` block below
+     for why: a _cc would drag the .xlsx attachment and the two
+     spreadsheet-related rows along with it, which is only meant for the
+     shop's own records). Whenever the customer gave an email or the order
+     has any file attached, the order submits as a REAL, visible, top-level
+     form POST straight to FormSubmit — not AJAX, not a hidden iframe.
+     Two independent reasons force this real-navigation path, either one on
+     its own would be enough: FormSubmit's /ajax/ endpoint silently drops
+     file attachments (see above), and — only when there's an email to send
+     a receipt to — FormSubmit's docs say autoresponse "won't work with
+     forms that are disabled reCAPTCHA and forms that are submitting
+     through AJAX", so reCAPTCHA is left on for that case specifically (see
+     submitViaRealNavigation). No email means no receipt to protect, so
+     reCAPTCHA stays off and the customer never sees a challenge even on
+     this real-navigation path. The browser briefly leaves this page and
+     FormSubmit redirects it straight back (via the `_next` field) once the
+     order is in; resumeAfterRedirect() below picks the order back up on
+     return and shows the normal success screen, so it still reads as
+     "stayed on the page placing an order" with one quick flash in between.
+     Since every order now normally carries its own .xlsx attachment (see
+     makeOrderExcelAttachment), this real-navigation path is what almost
+     every order takes. Orders with NEITHER an attachment NOR a customer
+     email — only possible if the Excel file failed to build (offline, CDN
+     blocked) — fall back to the fast, fully invisible AJAX path below.
+     NOTE: `_next` must be an http(s) URL, so this path only works once the
+     page is on its real hosted address — not when opened as a local file.
   --------------------------------------------------------------------------- */
   const FORM_ENDPOINT_AJAX  = "https://formsubmit.co/ajax/" + encodeURIComponent(FORM_TARGET);
   const FORM_ENDPOINT_PLAIN = "https://formsubmit.co/" + encodeURIComponent(FORM_TARGET);
@@ -809,7 +963,7 @@
   }
   const SEND_TIMEOUT_MS = 20000;
 
-  function sendOrderEmail(name, phone, email, address, city, method, orderNo, itemList, attachment, btn) {
+  function sendOrderEmail(name, phone, email, address, city, method, orderNo, itemList, attachments, btn) {
     btn.textContent = "Placing order…";
 
     const fields = {
@@ -825,26 +979,31 @@
       Items: itemList,
       Total: fmt(grandTotal)
     };
-    if (attachment) fields.Payment_screenshot = "See attached photo";
+    if (attachments.some(a => a.kind === "screenshot")) fields.Payment_screenshot = "See attached photo";
+    fields.Order_spreadsheet = attachments.some(a => a.kind === "excel")
+      ? "See attached order-" + orderNo + ".xlsx"
+      : "Not attached this time — see the itemised list above instead";
 
+    // Customer receipt — _autoresponse, not _cc. A _cc was tried briefly so
+    // the customer would see the exact same blue-header table the shop
+    // gets, but _cc mirrors that email byte-for-byte — there is no way to
+    // give the CC'd copy different rows or fewer attachments than the
+    // original. That meant the customer's copy always carried the
+    // Order_spreadsheet/attachment rows above and the actual .xlsx file,
+    // which is only meant for the shop's own records. _autoresponse fixes
+    // that by being a wholly separate, fully custom message: no table, no
+    // attachments, just this text — so the file and those two rows never
+    // reach the customer at all, and the wording is entirely under our
+    // control (it only ever renders as plain text — confirmed in testing —
+    // so it can't literally match the table's look, but it can say
+    // whatever we want).
     if (email) {
       fields.email = email;   // FormSubmit's magic field name — enables the autoresponse below
-      // FormSubmit's _autoresponse only ever renders as plain text (confirmed
-      // in testing — no HTML, no colors, no icons), so this can't literally
-      // look like the success PAGE. Instead it mirrors that page's actual
-      // wording and structure line for line — same "✓ Thank you" opener, the
-      // same three numbered steps in the same words, the same contact block —
-      // so it reads as the email version of the same moment, not a separate
-      // generic receipt.
       const firstName = name.split(" ")[0];
-      const paymentLine = method === "qr"
-        ? "Your order and payment screenshot have been received. Our team will verify your payment and confirm your order on Viber shortly."
-        : "Your order has been received. Please keep " + fmt(grandTotal) + " ready — you'll pay in cash when your order arrives at your door.";
       // A single "\n" gets swallowed by Gmail's plain-text rendering (it just
       // becomes a space, not a line break) — only a full blank line ("\n\n")
       // reliably shows up as a gap. So every line that needs to visibly stand
-      // on its own — including each step's title vs. its own description —
-      // is separated by a real blank line, not a single newline.
+      // on its own is separated by a real blank line, not a single newline.
       fields._autoresponse =
         "✓ THANK YOU FOR PLACING YOUR ORDER, " + firstName.toUpperCase() + "!\n\n" +
         "Please keep your phone nearby — we'll be in touch soon.\n\n" +
@@ -854,16 +1013,16 @@
         "Surendra Stone Carving · Bhaktapur, Nepal";
     }
 
-    // Attachment or customer email: real, visible, top-level submission —
+    // Attachment(s) or customer email: real, visible, top-level submission —
     // see the big comment above for why. The browser navigates away and
     // FormSubmit sends it straight back; nothing more happens on this page
     // until resumeAfterRedirect() picks it up on return.
-    if (attachment || email) {
-      submitViaRealNavigation(fields, attachment, orderNo, method, email);
+    if (attachments.length || email) {
+      submitViaRealNavigation(fields, attachments, orderNo, method, email);
       return;
     }
 
-    postOrderMultipart(fields, null)
+    postOrderMultipart(fields, attachments)
       .then(function (data) {
         if (data && String(data.success).toLowerCase() === "true") {
           showSuccess(method, orderNo, email);
@@ -882,7 +1041,7 @@
       })
       .catch(function (err) {
         console.warn("[FormSubmit] AJAX submit failed, retrying with hidden form:", err);
-        postOrderHiddenForm(fields, null)
+        postOrderHiddenForm(fields, attachments)
           .then(function () { showSuccess(method, orderNo, email); })
           .catch(function (err2) {
             console.error("[FormSubmit] Hidden-form submit also failed:", err2);
@@ -901,7 +1060,7 @@
      back. The order number is deliberately NOT committed here (that only
      happens on a confirmed return), so if the customer never makes it back
      — closes the tab, loses connection — the number is not burned. */
-  function submitViaRealNavigation(fields, attachment, orderNo, method, email) {
+  function submitViaRealNavigation(fields, attachments, orderNo, method, email) {
     try {
       localStorage.setItem(PENDING_KEY, JSON.stringify({
         orderNo: orderNo, method: method, total: grandTotal, email: email
@@ -921,7 +1080,14 @@
 
     const allFields = {};
     Object.keys(fields).forEach(function (key) { allFields[key] = fields[key]; });
-    delete allFields._captcha;   // leave reCAPTCHA ON — required for _autoresponse to fire
+    // reCAPTCHA is only worth leaving on when there's an email to send the
+    // _autoresponse receipt to — that's the one feature that requires it
+    // (see the comment above sendOrderEmail). No email means no receipt to
+    // protect, so _captcha:"false" (already set on `fields`) stays in place
+    // and the customer never sees a challenge, even on this real-navigation
+    // path — e.g. a cash-on-delivery order with no email, sent only for its
+    // .xlsx attachment.
+    if (email) delete allFields._captcha;
     allFields._next = returnUrl;
 
     Object.keys(allFields).forEach(function (key) {
@@ -931,19 +1097,25 @@
       form.appendChild(field);
     });
 
-    if (attachment && "DataTransfer" in window) {
-      try {
-        const fileInput = document.createElement("input");
-        fileInput.type = "file";
-        fileInput.name = "attachment";
-        const dt = new DataTransfer();
-        dt.items.add(new File([attachment.blob], attachment.filename, { type: attachment.blob.type || "image/jpeg" }));
-        fileInput.files = dt.files;
-        form.appendChild(fileInput);
-      } catch (e) {
-        // Older browsers can't build a FileList this way — the order still
-        // sends, just without the photo attached.
-      }
+    // Each attachment gets its own <input type="file" name="attachment"> —
+    // FormSubmit accepts several file inputs sharing that same field name
+    // and attaches all of them (combined 10MB limit), see the big comment
+    // above sendOrderEmail.
+    if ("DataTransfer" in window) {
+      attachments.forEach(function (att) {
+        try {
+          const fileInput = document.createElement("input");
+          fileInput.type = "file";
+          fileInput.name = "attachment";
+          const dt = new DataTransfer();
+          dt.items.add(new File([att.blob], att.filename, { type: att.blob.type || "application/octet-stream" }));
+          fileInput.files = dt.files;
+          form.appendChild(fileInput);
+        } catch (e) {
+          // Older browsers can't build a FileList this way — the order still
+          // sends, just without this one file attached.
+        }
+      });
     }
 
     document.body.appendChild(form);
@@ -983,18 +1155,18 @@
     showSuccess(pending.method, pending.orderNo, pending.email);
   }
 
-  /* Primary path for orders with no attachment: FormData -> /ajax/ endpoint,
+  /* Primary path for orders with no attachments: FormData -> /ajax/ endpoint,
      with a real response check (fast, gives an explicit success/failure).
-     Orders WITH a screenshot skip this entirely — see the note above
-     sendOrderEmail — so `attachment` here is always null; the parameter is
-     kept only so this and postOrderHiddenForm share the same shape. */
-  function postOrderMultipart(fields, attachment) {
+     Orders with any attachment skip this entirely — see the note above
+     sendOrderEmail — so `attachments` here is normally empty; the parameter
+     is kept only so this and postOrderHiddenForm share the same shape. */
+  function postOrderMultipart(fields, attachments) {
     var controller = ("AbortController" in window) ? new AbortController() : null;
     var timer = controller ? setTimeout(function () { controller.abort(); }, SEND_TIMEOUT_MS) : null;
 
     var body = new FormData();
     Object.keys(fields).forEach(function (key) { body.append(key, fields[key]); });
-    if (attachment) body.append("attachment", attachment.blob, attachment.filename);
+    (attachments || []).forEach(function (att) { body.append("attachment", att.blob, att.filename); });
 
     // Do not set Content-Type manually — the browser adds the multipart
     // boundary itself; overriding it breaks the upload.
@@ -1020,10 +1192,10 @@
   }
 
   /* Fallback path: hidden form posted into a hidden iframe. No CORS involved.
-     multipart/form-data enctype so the attachment (if any) still rides along
-     as a real file, using DataTransfer to hand the in-memory blob to a real
-     file input (a file input's FileList can't be set any other way). */
-  function postOrderHiddenForm(fields, attachment) {
+     multipart/form-data enctype so any attachments still ride along as real
+     files, using DataTransfer to hand each in-memory blob to a real file
+     input (a file input's FileList can't be set any other way). */
+  function postOrderHiddenForm(fields, attachments) {
     return new Promise(function (resolve, reject) {
       if (navigator.onLine === false) {
         reject(new Error("device is offline"));
@@ -1053,20 +1225,22 @@
         form.appendChild(field);
       });
 
-      if (attachment && "DataTransfer" in window) {
-        try {
-          var fileInput = document.createElement("input");
-          fileInput.type = "file";
-          fileInput.name = "attachment";
-          fileInput.style.display = "none";
-          var dt = new DataTransfer();
-          dt.items.add(new File([attachment.blob], attachment.filename, { type: attachment.blob.type || "image/jpeg" }));
-          fileInput.files = dt.files;
-          form.appendChild(fileInput);
-        } catch (e) {
-          // Older browsers can't build a FileList this way — the order still
-          // sends on this retry path, just without the photo attached.
-        }
+      if ("DataTransfer" in window) {
+        (attachments || []).forEach(function (att) {
+          try {
+            var fileInput = document.createElement("input");
+            fileInput.type = "file";
+            fileInput.name = "attachment";
+            fileInput.style.display = "none";
+            var dt = new DataTransfer();
+            dt.items.add(new File([att.blob], att.filename, { type: att.blob.type || "application/octet-stream" }));
+            fileInput.files = dt.files;
+            form.appendChild(fileInput);
+          } catch (e) {
+            // Older browsers can't build a FileList this way — the order
+            // still sends on this retry path, just without this file attached.
+          }
+        });
       }
 
       document.body.appendChild(form);
