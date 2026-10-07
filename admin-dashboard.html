@@ -8,6 +8,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
 <!-- SheetJS — used only for the "Download this view as Excel" button. -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- nepali-date-converter — BS <-> AD conversion for the Custom date range's
+     Nepali-calendar option. Month lengths in the Bikram Sambat calendar
+     aren't a fixed formula (they're published per year), so this relies on
+     the library's own calendar data rather than any date math of our own. -->
+<script src="https://cdn.jsdelivr.net/npm/nepali-date-converter/dist/nepali-date-converter.umd.js"></script>
 <style>
   :root {
     --ink: #2A2420; --paper: #E8DFC8; --teal: #8B4226; --teal-dark: #6B3019;
@@ -80,10 +85,15 @@
   }
   .seg button:last-child { border-right: none; }
   .seg button.active { background: var(--teal); color: #fff; }
-  .control-group input[type="date"] {
+  .control-group input[type="date"], .control-group select {
     padding: 9px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font-size: 13px;
   }
-  .range-row { display: flex; gap: 8px; align-items: center; }
+  .range-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .cal-seg { margin-bottom: 8px; width: 100%; }
+  .cal-seg button { flex: 1; text-align: center; }
+  .bs-date-group { display: flex; flex-direction: column; gap: 4px; }
+  .bs-date-lbl { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
+  .bs-date-inputs { display: flex; gap: 6px; }
 
   .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
   .stat-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
@@ -101,6 +111,22 @@
   table.data tr:last-child td { border-bottom: none; }
   table.data tr:hover td { background: rgba(139,66,38,0.05); }
   .empty-row td { text-align: center; color: var(--muted); padding: 30px 12px; }
+
+  .pager {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    gap: 12px; padding: 10px 14px; border-top: 1px solid var(--line);
+  }
+  .pager-size { display: flex; align-items: center; gap: 8px; }
+  .pager-size .lbl { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
+  .pager-size select { padding: 6px 8px; border: 1.5px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); font-size: 13px; }
+  .pager-info { font-size: 13px; color: var(--muted); }
+  .pager-nav { display: flex; gap: 6px; }
+  .pager-btn {
+    width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid var(--line); background: #fff;
+    color: var(--ink); font-size: 13px; cursor: pointer;
+  }
+  .pager-btn:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); }
+  .pager-btn:disabled { opacity: 0.4; cursor: default; }
 
   .actions-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
   .hint { font-size: 12px; color: var(--muted); }
@@ -164,11 +190,36 @@
       </div>
       <div class="control-group" id="customRangeGroup" style="display:none;">
         <span class="lbl">From — To</span>
-        <div class="range-row">
+        <div class="seg cal-seg" id="calendarSeg">
+          <button data-cal="ad" class="active" onclick="setCalendar('ad')">AD (English)</button>
+          <button data-cal="bs" onclick="setCalendar('bs')">BS (Nepali)</button>
+        </div>
+
+        <div class="range-row" id="adRangeFields">
           <input type="date" id="fromDate">
           <input type="date" id="toDate">
-          <button class="btn small" onclick="applyCustomRange()">Apply</button>
         </div>
+
+        <div class="range-row" id="bsRangeFields" style="display:none;">
+          <div class="bs-date-group">
+            <span class="bs-date-lbl">From</span>
+            <div class="bs-date-inputs">
+              <select id="fromBsDay"></select>
+              <select id="fromBsMonth"></select>
+              <select id="fromBsYear"></select>
+            </div>
+          </div>
+          <div class="bs-date-group">
+            <span class="bs-date-lbl">To</span>
+            <div class="bs-date-inputs">
+              <select id="toBsDay"></select>
+              <select id="toBsMonth"></select>
+              <select id="toBsYear"></select>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn small" style="margin-top:10px;" onclick="applyCustomRange()">Apply</button>
       </div>
       <div class="control-group">
         <span class="lbl">View</span>
@@ -176,6 +227,14 @@
           <button data-view="orders" class="active" onclick="setView('orders')">Order list</button>
           <button data-view="daily" onclick="setView('daily')">Daily</button>
           <button data-view="monthly" onclick="setView('monthly')">Monthly</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <span class="lbl">Payment method</span>
+        <div class="seg" id="paymentSeg">
+          <button data-payment="all" class="active" onclick="setPaymentFilter('all')">All</button>
+          <button data-payment="cod" onclick="setPaymentFilter('cod')">Cash on delivery</button>
+          <button data-payment="online" onclick="setPaymentFilter('online')">Online</button>
         </div>
       </div>
     </div>
@@ -193,6 +252,25 @@
           <thead><tr id="tableHead"></tr></thead>
           <tbody id="tableBody"></tbody>
         </table>
+      </div>
+      <div class="pager" id="pager" style="display:none;">
+        <div class="pager-size">
+          <span class="lbl">No of Rows</span>
+          <select id="pageSizeSelect" onchange="setPageSize(this.value)">
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+            <option value="25">25</option>
+            <option value="30">30</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+        <div class="pager-info" id="pagerInfo">0 of 0</div>
+        <div class="pager-nav">
+          <button class="pager-btn" id="pagerPrev" onclick="goToPage(currentPage - 1)" aria-label="Previous page">◄</button>
+          <button class="pager-btn" id="pagerNext" onclick="goToPage(currentPage + 1)" aria-label="Next page">►</button>
+        </div>
       </div>
     </div>
 
@@ -220,6 +298,9 @@
   let customFrom = null;
   let customTo = null;
   let viewMode = "orders";   // "orders" | "daily" | "monthly"
+  let paymentFilter = "all"; // "all" | "cod" | "online"
+  let pageSize = 10;         // Order list rows per page
+  let currentPage = 1;       // Order list current page (1-based)
 
   /* ---------------------------------------------------------------------------
      Fetching — identical JSONP trick used in admin-orders.html: Google Apps
@@ -373,21 +454,241 @@
      -------------------------------------------------------------------------- */
   function setRange(mode) {
     rangeMode = mode;
+    currentPage = 1;   // new filter, start back at page 1
     document.querySelectorAll("#rangeSeg button").forEach(function (b) { b.classList.toggle("active", b.dataset.range === mode); });
     document.getElementById("customRangeGroup").style.display = mode === "custom" ? "grid" : "none";
+    if (mode === "custom" && !bsSelectorsReady) { populateBsSelectors(); bsSelectorsReady = true; }
     if (mode !== "custom") render();
   }
 
+  /* --------------------------------------------------------------------------
+     BS (Bikram Sambat / Nepali calendar) support for the Custom range.
+     Bikram Sambat month lengths (29–32 days) are fixed per year by an
+     official published calendar, not a formula — so this leans entirely on
+     nepali-date-converter's own calendar data (loaded in <head>) rather
+     than any date math written here. Selecting BS just produces the same
+     customFrom/customTo AD (YYYY-MM-DD) strings the plain AD date inputs
+     do, converted via the library — everything downstream (getRangeBounds,
+     filteredRows, rendering, export) stays exactly as it was and has no
+     idea BS was ever involved.
+     -------------------------------------------------------------------------- */
+  const BS_MONTHS = [
+    "Baisakh", "Jestha", "Ashadh", "Shrawan", "Bhadra", "Ashwin",
+    "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra"
+  ];
+  let calendarMode = "ad";     // "ad" | "bs"
+  let bsSelectorsReady = false;
+
+  // The UMD bundle attaches its class onto window as `NepaliDate` — this
+  // also copes with the case where that build instead lands the class at
+  // `NepaliDate.default` (common for bundled TS default exports), so a
+  // future CDN/version change to one form or the other doesn't silently
+  // break this.
+  function getNepaliDateCtor() {
+    if (typeof NepaliDate === "undefined") return null;
+    return (typeof NepaliDate === "function") ? NepaliDate : (NepaliDate.default || null);
+  }
+
+  function setCalendar(mode) {
+    calendarMode = mode;
+    document.querySelectorAll("#calendarSeg button").forEach(function (b) { b.classList.toggle("active", b.dataset.cal === mode); });
+    document.getElementById("adRangeFields").style.display = mode === "ad" ? "flex" : "none";
+    document.getElementById("bsRangeFields").style.display = mode === "bs" ? "flex" : "none";
+  }
+
+  function fillSelect(id, options, selectedValue) {
+    const sel = document.getElementById(id);
+    sel.innerHTML = "";
+    options.forEach(function (opt) {
+      const el = document.createElement("option");
+      el.value = opt.value;
+      el.textContent = opt.label;
+      if (opt.value === selectedValue) el.selected = true;
+      sel.appendChild(el);
+    });
+  }
+
+  function populateBsSelectors() {
+    const Ctor = getNepaliDateCtor();
+    if (!Ctor) {
+      // Library failed to load (offline, CDN blocked) — leave the BS option
+      // showing empty selects rather than erroring; setCalendar('bs') still
+      // works, applyCustomRange() below catches this and explains it then.
+      return;
+    }
+    let today;
+    try { today = Ctor.now ? Ctor.now() : new Ctor(new Date()); } catch (e) { today = null; }
+    const currentYear = today ? today.getYear() : 2082;
+    const currentMonth = today ? today.getMonth() : 0;
+    const currentDay = today ? today.getDate() : 1;
+
+    const years = [];
+    for (let y = currentYear - 10; y <= currentYear + 1; y++) years.push({ value: y, label: String(y) });
+    const months = BS_MONTHS.map(function (name, i) { return { value: i, label: name }; });
+    const days = [];
+    for (let d = 1; d <= 32; d++) days.push({ value: d, label: String(d) });
+
+    fillSelect("fromBsYear", years, currentYear);
+    fillSelect("toBsYear", years, currentYear);
+    fillSelect("fromBsMonth", months, currentMonth);
+    fillSelect("toBsMonth", months, currentMonth);
+    fillSelect("fromBsDay", days, 1);
+    fillSelect("toBsDay", days, currentDay);
+  }
+
+  function toIsoDateStr(d) {
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+
+  /* Keeps From <= To true at all times, in both calendars — not just
+     checked when Apply is clicked. AD gets this natively via min/max on the
+     <input type="date"> elements (the browser's own picker UI simply won't
+     let an invalid date be chosen); BS has no such built-in constraint for
+     three plain <select> elements, so the same effect is done by hand:
+     after any of the six BS selects changes, re-read both sides and if
+     that made From > To, pull the side that WASN'T just touched into line
+     with the one that was. */
+  function bsSelectorsToJsDate(prefix) {
+    const Ctor = getNepaliDateCtor();
+    if (!Ctor) return null;
+    try {
+      return new Ctor(
+        Number(document.getElementById(prefix + "BsYear").value),
+        Number(document.getElementById(prefix + "BsMonth").value),
+        Number(document.getElementById(prefix + "BsDay").value)
+      ).toJsDate();
+    } catch (e) {
+      return null;   // invalid day for that BS month — leave ordering alone, applyCustomRange() catches this
+    }
+  }
+
+  function setSelectValueIfExists(id, value) {
+    const sel = document.getElementById(id);
+    const has = Array.prototype.some.call(sel.options, function (o) { return Number(o.value) === Number(value); });
+    if (has) sel.value = value;
+  }
+
+  function setBsSelectors(prefix, jsDate) {
+    const Ctor = getNepaliDateCtor();
+    if (!Ctor) return;
+    try {
+      const bs = Ctor.fromAD ? Ctor.fromAD(jsDate) : new Ctor(jsDate);
+      setSelectValueIfExists(prefix + "BsYear", bs.getYear());
+      setSelectValueIfExists(prefix + "BsMonth", bs.getMonth());
+      setSelectValueIfExists(prefix + "BsDay", bs.getDate());
+    } catch (e) {}
+  }
+
+  function enforceBsOrder(changedPrefix) {
+    const fromJs = bsSelectorsToJsDate("from");
+    const toJs = bsSelectorsToJsDate("to");
+    if (!fromJs || !toJs || fromJs <= toJs) return;
+    // From ended up after To — pull whichever side wasn't just edited to match.
+    if (changedPrefix === "from") setBsSelectors("to", fromJs);
+    else setBsSelectors("from", toJs);
+  }
+
+  // No point reporting on orders that haven't happened yet — neither side
+  // of either calendar can be pushed past today.
+  function todayMidnight() {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  }
+
+  function clampBsToToday(prefix) {
+    const js = bsSelectorsToJsDate(prefix);
+    if (js && js > todayMidnight()) setBsSelectors(prefix, todayMidnight());
+  }
+
+  ["fromBsDay", "fromBsMonth", "fromBsYear"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", function () {
+      clampBsToToday("from");
+      enforceBsOrder("from");
+    });
+  });
+  ["toBsDay", "toBsMonth", "toBsYear"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", function () {
+      clampBsToToday("to");
+      enforceBsOrder("to");
+    });
+  });
+
+  /* AD side: native min/max keep the picker itself from offering an
+     out-of-order or future date — max is always the tighter of "today" and
+     whatever the other field is set to, since there's only one max
+     attribute to work with per field. */
+  function syncAdConstraints() {
+    const fromEl = document.getElementById("fromDate");
+    const toEl = document.getElementById("toDate");
+    const today = toIsoDateStr(new Date());
+    toEl.max = today;
+    fromEl.max = (toEl.value && toEl.value < today) ? toEl.value : today;
+    if (toEl.value && toEl.value > today) toEl.value = today;
+    if (fromEl.value && fromEl.value > fromEl.max) fromEl.value = fromEl.max;
+  }
+  syncAdConstraints();
+
+  document.getElementById("fromDate").addEventListener("change", function () {
+    document.getElementById("toDate").min = this.value;
+    syncAdConstraints();
+  });
+  document.getElementById("toDate").addEventListener("change", syncAdConstraints);
+
   function applyCustomRange() {
-    customFrom = document.getElementById("fromDate").value || null;
-    customTo = document.getElementById("toDate").value || null;
+    if (calendarMode === "bs") {
+      const Ctor = getNepaliDateCtor();
+      if (!Ctor) { alert("The Nepali calendar library didn't load — check your internet connection, or switch to AD."); return; }
+      try {
+        const fromJs = new Ctor(
+          Number(document.getElementById("fromBsYear").value),
+          Number(document.getElementById("fromBsMonth").value),
+          Number(document.getElementById("fromBsDay").value)
+        ).toJsDate();
+        const toJs = new Ctor(
+          Number(document.getElementById("toBsYear").value),
+          Number(document.getElementById("toBsMonth").value),
+          Number(document.getElementById("toBsDay").value)
+        ).toJsDate();
+        customFrom = toIsoDateStr(fromJs);
+        customTo = toIsoDateStr(toJs);
+      } catch (e) {
+        // Most likely an out-of-range day for that BS month (they run 29–32
+        // days depending on the year) — not something worth precomputing a
+        // valid range for, just say so and let them pick again.
+        alert("That's not a valid date on the Nepali calendar — some months only have 29 or 30 days. Try a smaller day number.");
+        return;
+      }
+    } else {
+      customFrom = document.getElementById("fromDate").value || null;
+      customTo = document.getElementById("toDate").value || null;
+    }
     if (!customFrom || !customTo) { alert("Pick both a From and a To date."); return; }
+    currentPage = 1;   // new filter, start back at page 1
     render();
   }
 
   function setView(mode) {
     viewMode = mode;
+    currentPage = 1;
     document.querySelectorAll("#viewSeg button").forEach(function (b) { b.classList.toggle("active", b.dataset.view === mode); });
+    render();
+  }
+
+  function setPaymentFilter(mode) {
+    paymentFilter = mode;
+    currentPage = 1;
+    document.querySelectorAll("#paymentSeg button").forEach(function (b) { b.classList.toggle("active", b.dataset.payment === mode); });
+    render();
+  }
+
+  function setPageSize(value) {
+    pageSize = Number(value);
+    currentPage = 1;
+    render();
+  }
+
+  function goToPage(n) {
+    currentPage = n;
     render();
   }
 
@@ -416,10 +717,22 @@
     return null;   // "all" (or custom picked but not applied yet)
   }
 
+  // Matches how pasal-checkout.html writes this column: "Cash on delivery"
+  // or "Online payment (QR)" — checked with "starts with online" rather
+  // than an exact match, so a future online method beyond just QR still
+  // counts as "Online" without this needing an update.
+  function matchesPaymentFilter(row) {
+    if (paymentFilter === "all") return true;
+    const p = String(row["Payment method"] || "").toLowerCase();
+    return paymentFilter === "cod" ? p === "cash on delivery" : p.indexOf("online") === 0;
+  }
+
   function filteredRows() {
     const bounds = getRangeBounds();
-    if (!bounds) return allRows;
-    return allRows.filter(function (r) { return r._date && r._date >= bounds.start && r._date <= bounds.end; });
+    return allRows.filter(function (r) {
+      const inRange = !bounds || (r._date && r._date >= bounds.start && r._date <= bounds.end);
+      return inRange && matchesPaymentFilter(r);
+    });
   }
 
   /* --------------------------------------------------------------------------
@@ -516,32 +829,55 @@
     document.getElementById("statAvg").textContent = fmtMoney(orderNos.size ? totalSales / orderNos.size : 0);
 
     const bounds = getRangeBounds();
-    document.getElementById("rangeHint").textContent = bounds
+    let hint = bounds
       ? "Showing " + fmtDay(bounds.start) + " – " + fmtDay(bounds.end)
       : "Showing all orders ever placed";
 
     clearTable();
+    const pager = document.getElementById("pager");
     if (viewMode === "orders") {
+      pager.style.display = "flex";
       addHeaderCells(["Order number", "Date", "Full name", "Phone", "District", "Delivery address", "Payment method", "Items", "Total"]);
-      const orders = aggregateOrders(rows);
-      if (!orders.length) { addEmptyRow(9, "No orders in this range."); return; }
-      orders.forEach(function (o) {
-        addRow([
-          o.orderNo, o.date ? o.date.toLocaleString("en-GB") : "—", o.name, o.phone,
-          o.district, o.address, o.payment, o.items.join(", "), fmtMoney(o.total)
-        ]);
-      });
-    } else if (viewMode === "daily") {
-      addHeaderCells(["Date", "Orders", "Sales"]);
-      const buckets = aggregateByBucket(rows, dayKey, fmtDay);
-      if (!buckets.length) { addEmptyRow(3, "No orders in this range."); return; }
-      buckets.forEach(function (b) { addRow([b.label, b.orders, fmtMoney(b.sales)]); });
+      // Newest first (see aggregateOrders) and paginated — the full range is
+      // still what the summary cards and the Excel export use, only the
+      // on-screen table is split into pages.
+      const allOrders = aggregateOrders(rows);
+      const totalPages = Math.max(1, Math.ceil(allOrders.length / pageSize));
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+      const start = (currentPage - 1) * pageSize;
+      const pageOrders = allOrders.slice(start, start + pageSize);
+
+      if (!allOrders.length) {
+        addEmptyRow(9, "No orders in this range.");
+      } else {
+        pageOrders.forEach(function (o) {
+          addRow([
+            o.orderNo, o.date ? o.date.toLocaleString("en-GB") : "—", o.name, o.phone,
+            o.district, o.address, o.payment, o.items.join(", "), fmtMoney(o.total)
+          ]);
+        });
+      }
+
+      document.getElementById("pagerInfo").textContent =
+        allOrders.length ? (start + 1) + "–" + (start + pageOrders.length) + " of " + allOrders.length : "0 of 0";
+      document.getElementById("pagerPrev").disabled = currentPage <= 1;
+      document.getElementById("pagerNext").disabled = currentPage >= totalPages;
     } else {
-      addHeaderCells(["Month", "Orders", "Sales"]);
-      const buckets = aggregateByBucket(rows, monthKey, fmtMonth);
-      if (!buckets.length) { addEmptyRow(3, "No orders in this range."); return; }
-      buckets.forEach(function (b) { addRow([b.label, b.orders, fmtMoney(b.sales)]); });
+      pager.style.display = "none";
+      if (viewMode === "daily") {
+        addHeaderCells(["Date", "Orders", "Sales"]);
+        const buckets = aggregateByBucket(rows, dayKey, fmtDay);
+        if (!buckets.length) addEmptyRow(3, "No orders in this range.");
+        else buckets.forEach(function (b) { addRow([b.label, b.orders, fmtMoney(b.sales)]); });
+      } else {
+        addHeaderCells(["Month", "Orders", "Sales"]);
+        const buckets = aggregateByBucket(rows, monthKey, fmtMonth);
+        if (!buckets.length) addEmptyRow(3, "No orders in this range.");
+        else buckets.forEach(function (b) { addRow([b.label, b.orders, fmtMoney(b.sales)]); });
+      }
     }
+    document.getElementById("rangeHint").textContent = hint;
   }
 
   /* Same column layout as the Google Sheet order log and the per-order .xlsx

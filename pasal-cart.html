@@ -78,7 +78,19 @@
   }
   .item-img {
     width: 72px; height: 72px; border-radius: 10px; background: var(--marigold-soft);
-    display: flex; align-items: center; justify-content: center; font-size: 30px;
+    display: flex; align-items: center; justify-content: center; font-size: 30px; overflow: hidden; position: relative;
+  }
+  .item-img img { width: 92%; height: 92%; object-fit: contain; }
+  .item-img.full-height img { width: 100%; height: 100%; }
+  .item-img.fill img {
+    width: calc(100% * var(--zoom, 1)); height: calc(100% * var(--zoom, 1));
+    flex-shrink: 0; object-fit: cover;
+  }
+  .wm-overlay::after {
+    content: "Surendra Stone Carving"; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    transform: rotate(-30deg); font-weight: 700; font-size: 8px; color: rgba(255, 255, 255, 0.7);
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.4); pointer-events: none;
   }
   .item-info { display: grid; gap: 2px; }
   .item-name { font-weight: 700; font-size: 15px; }
@@ -311,35 +323,93 @@
   const DELIVERY_FEE = 100;
 
   const catalog = [
-    { name: "Silauto", price: 700, glyph: "🪨" },
-    { name: "Shiva Linga", price: 350, glyph: "🔱" },
-    { name: "Pashupatinath Idol", price: 2400, glyph: "🛕" },
-    { name: "Surya", price: 1100, glyph: "☀️" },
-    { name: "Ganesh Statue", price: 950, glyph: "🐘" },
-    { name: "Kumar Statue", price: 450, glyph: "🦚" },
-    { name: "Bhimshen Statue", price: 1800, glyph: "🗿" },
-    { name: "Laxmi Statue", price: 550, glyph: "🪷" }
+    { name: "Silauto", glyph: "🪨", sizes: [{ label: "8 inch", price: 500 }, { label: "1 ft", price: 700 }, { label: "1.5 ft", price: 950 }] },
+    { name: "Shiva Linga", glyph: "🔱", img: "img/Shivalinga.png", sizes: [{ label: "8 inch", price: 250 }, { label: "1 ft", price: 350 }, { label: "1.5 ft", price: 500 }] },
+    { name: "Pashupatinath Idol", glyph: "🛕", img: "img/Pashupatinath.png", sizes: [{ label: "8 inch", price: 1800 }, { label: "1 ft", price: 2400 }, { label: "1.5 ft", price: 3200 }] },
+    { name: "Surya", glyph: "☀️", sizes: [{ label: "8 inch", price: 800 }, { label: "1 ft", price: 1100 }, { label: "1.5 ft", price: 1500 }] },
+    { name: "Ganesh Statue", glyph: "🐘", img: "img/ganesh.png", sizes: [{ label: "8 inch", price: 700 }, { label: "1 ft", price: 950 }, { label: "1.5 ft", price: 1300 }] },
+    { name: "Kumar Statue", glyph: "🦚", sizes: [{ label: "8 inch", price: 320 }, { label: "1 ft", price: 450 }, { label: "1.5 ft", price: 620 }] },
+    { name: "Bhimshen Statue", glyph: "🗿", img: "img/Bhimsen.png", sizes: [{ label: "8 inch", price: 1300 }, { label: "1 ft", price: 1800 }, { label: "1.5 ft", price: 2400 }] },
+    { name: "Laxmi Statue", glyph: "🪷", sizes: [{ label: "8 inch", price: 400 }, { label: "1 ft", price: 550 }, { label: "1.5 ft", price: 750 }] },
+    { name: "Dhara", glyph: "⛲", img: "img/dhara.png", sizes: [{ label: "8 inch", price: 4500 }, { label: "1 ft", price: 6000 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Naag Statue", glyph: "🐍", img: "img/naag.png", fullHeight: true, sizes: [{ label: "8 inch", price: 450 }, { label: "1 ft", price: 650 }, { label: "1.5 ft", price: 900 }] },
+    { name: "Narayan Statue", glyph: "🐚", img: "img/Narayan.png", sizes: [{ label: "8 inch", price: 900 }, { label: "1 ft", price: 1200 }, { label: "1.5 ft", price: 1600 }] },
+    { name: "Saraswati Statue", glyph: "📚", img: "img/Saraswati.png", sizes: [{ label: "8 inch", price: 650 }, { label: "1 ft", price: 850 }, { label: "1.5 ft", price: 1150 }] }
   ];
 
   const CART_KEY = "pasal_cart";
   let cart = [];
   try {
     const saved = JSON.parse(localStorage.getItem(CART_KEY)) || {};
-    Object.entries(saved).forEach(([i, q]) => {
-      i = Number(i); q = Number(q);
-      if (catalog[i] && q > 0) {
-        cart.push({ index: i, name: catalog[i].name, price: catalog[i].price, glyph: catalog[i].glyph, qty: q });
+    Object.entries(saved).forEach(([key, q]) => {
+      const [i, si] = key.split(":").map(Number);
+      q = Number(q);
+      const product = catalog[i];
+      const size = product && product.sizes[si];
+      if (size && q > 0) {
+        cart.push({ index: i, sizeIndex: si, name: product.name, sizeLabel: size.label, price: size.price, glyph: product.glyph, img: product.img, fill: product.fill, zoom: product.zoom, fullHeight: product.fullHeight, qty: q });
       }
     });
   } catch (e) {}
 
   function saveCart() {
     const obj = {};
-    cart.forEach(item => { obj[item.index] = item.qty; });
+    cart.forEach(item => { obj[item.index + ":" + item.sizeIndex] = item.qty; });
     localStorage.setItem(CART_KEY, JSON.stringify(obj));
   }
 
   const fmt = n => "Rs " + n.toLocaleString("en-IN");
+
+  // Product photos are shown with a "Surendra Stone Carving" watermark baked
+  // into the image itself, so "Open image in new tab" shows it too.
+  const WATERMARK_TEXT = "Surendra Stone Carving";
+  const watermarked = {};
+  function watermark(src) {
+    if (!watermarked[src]) watermarked[src] = new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas");
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const size = Math.max(14, Math.round(c.width / 14));
+        ctx.font = `700 ${size}px "Segoe UI", Arial, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
+        ctx.lineWidth = Math.max(1, size / 16);
+        ctx.translate(c.width / 2, c.height / 2);
+        ctx.rotate(-Math.PI / 6);
+        const reach = Math.hypot(c.width, c.height) / 2;
+        for (let y = -reach; y <= reach; y += size * 7) {
+          ctx.strokeText(WATERMARK_TEXT, 0, y);
+          ctx.fillText(WATERMARK_TEXT, 0, y);
+        }
+        const type = /\.png$/i.test(src) ? "image/png" : "image/jpeg";
+        try {
+          c.toBlob(b => resolve(b ? URL.createObjectURL(b) : null), type, 0.9);
+        } catch (e) {
+          resolve(null); // canvas blocked (e.g. page opened from file://)
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+    return watermarked[src];
+  }
+  function applyWatermarks(root) {
+    root.querySelectorAll("img[data-src]").forEach(img => {
+      const src = img.dataset.src;
+      img.removeAttribute("data-src");
+      watermark(src).then(url => {
+        if (url) { img.src = url; return; }
+        img.src = src;
+        img.parentElement.classList.add("wm-overlay");
+      });
+    });
+  }
 
   function render() {
     const list = document.getElementById("cartItems");
@@ -360,9 +430,9 @@
       const row = document.createElement("div");
       row.className = "cart-item";
       row.innerHTML = `
-        <div class="item-img" aria-hidden="true">${item.glyph}</div>
+        <div class="item-img${item.fill ? ' fill' : ''}${item.fullHeight ? ' full-height' : ''}" aria-hidden="true">${item.img ? `<img data-src="${item.img}" alt=""${item.zoom ? ` style="--zoom: ${item.zoom}"` : ''}>` : item.glyph}</div>
         <div class="item-info">
-          <span class="item-name">${item.name}</span>
+          <span class="item-name">${item.name} — ${item.sizeLabel}</span>
           <span class="item-unit">${fmt(item.price)} each</span>
           <button class="remove-btn" onclick="removeItem(${i})">Remove</button>
         </div>
@@ -375,6 +445,7 @@
           </div>
         </div>`;
       list.appendChild(row);
+      applyWatermarks(row);
     });
 
     const count = cart.reduce((s, it) => s + it.qty, 0);

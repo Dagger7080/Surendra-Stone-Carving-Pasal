@@ -501,14 +501,18 @@
   const DELIVERY_FEE = 100;
 
   const catalog = [
-    { name: "Silauto", price: 700 },
-    { name: "Shiva Linga", price: 350 },
-    { name: "Pashupatinath Idol", price: 2400 },
-    { name: "Surya", price: 1100 },
-    { name: "Ganesh Statue", price: 950 },
-    { name: "Kumar Statue", price: 450 },
-    { name: "Bhimshen Statue", price: 1800 },
-    { name: "Laxmi Statue", price: 550 }
+    { name: "Silauto", sizes: [{ label: "8 inch", price: 500 }, { label: "1 ft", price: 700 }, { label: "1.5 ft", price: 950 }] },
+    { name: "Shiva Linga", sizes: [{ label: "8 inch", price: 250 }, { label: "1 ft", price: 350 }, { label: "1.5 ft", price: 500 }] },
+    { name: "Pashupatinath Idol", sizes: [{ label: "8 inch", price: 1800 }, { label: "1 ft", price: 2400 }, { label: "1.5 ft", price: 3200 }] },
+    { name: "Surya", sizes: [{ label: "8 inch", price: 800 }, { label: "1 ft", price: 1100 }, { label: "1.5 ft", price: 1500 }] },
+    { name: "Ganesh Statue", sizes: [{ label: "8 inch", price: 700 }, { label: "1 ft", price: 950 }, { label: "1.5 ft", price: 1300 }] },
+    { name: "Kumar Statue", sizes: [{ label: "8 inch", price: 320 }, { label: "1 ft", price: 450 }, { label: "1.5 ft", price: 620 }] },
+    { name: "Bhimshen Statue", sizes: [{ label: "8 inch", price: 1300 }, { label: "1 ft", price: 1800 }, { label: "1.5 ft", price: 2400 }] },
+    { name: "Laxmi Statue", sizes: [{ label: "8 inch", price: 400 }, { label: "1 ft", price: 550 }, { label: "1.5 ft", price: 750 }] },
+    { name: "Dhara", sizes: [{ label: "8 inch", price: 4500 }, { label: "1 ft", price: 6000 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Naag Statue", sizes: [{ label: "8 inch", price: 450 }, { label: "1 ft", price: 650 }, { label: "1.5 ft", price: 900 }] },
+    { name: "Narayan Statue", sizes: [{ label: "8 inch", price: 900 }, { label: "1 ft", price: 1200 }, { label: "1.5 ft", price: 1600 }] },
+    { name: "Saraswati Statue", sizes: [{ label: "8 inch", price: 650 }, { label: "1 ft", price: 850 }, { label: "1.5 ft", price: 1150 }] }
   ];
 
   const fmt = n => "Rs " + n.toLocaleString("en-IN");
@@ -606,9 +610,12 @@
   let cart = [];
   try {
     const saved = JSON.parse(localStorage.getItem(CART_KEY)) || {};
-    Object.entries(saved).forEach(([i, q]) => {
-      i = Number(i); q = Number(q);
-      if (catalog[i] && q > 0) cart.push({ ...catalog[i], qty: q });
+    Object.entries(saved).forEach(([key, q]) => {
+      const [i, si] = key.split(":").map(Number);
+      q = Number(q);
+      const product = catalog[i];
+      const size = product && product.sizes[si];
+      if (size && q > 0) cart.push({ name: product.name + " — " + size.label, price: size.price, qty: q });
     });
   } catch (e) {}
 

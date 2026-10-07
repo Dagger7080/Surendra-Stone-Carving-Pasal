@@ -125,11 +125,41 @@
   .product-img {
     aspect-ratio: 4 / 3; background: var(--marigold-soft);
     display: flex; align-items: center; justify-content: center;
-    font-size: 40px; color: var(--teal);
+    font-size: 40px; color: var(--teal); overflow: hidden; position: relative;
+  }
+  .product-img img { width: 90%; height: 92%; object-fit: contain; }
+  .product-img.full-height img { width: 100%; height: 100%; }
+  .product-img.fill img {
+    width: calc(100% * var(--zoom, 1)); height: calc(100% * var(--zoom, 1));
+    flex-shrink: 0; object-fit: cover;
+  }
+  .product-img.zoomable { cursor: crosshair; }
+  .zoom-lens {
+    position: absolute; pointer-events: none; display: none;
+    border: 1px solid rgba(0, 0, 0, 0.35); background: rgba(255, 255, 255, 0.35);
+  }
+  .zoom-pane {
+    position: fixed; z-index: 1000; width: 380px; height: 380px; display: none;
+    background-color: var(--marigold-soft); background-repeat: no-repeat;
+    border: 1px solid rgba(0, 0, 0, 0.15); border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); overflow: hidden; pointer-events: none;
+  }
+  .wm-overlay::after {
+    content: "Surendra Stone Carving"; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center; transform: rotate(-30deg);
+    font-weight: 700; font-size: 13px; color: rgba(255, 255, 255, 0.7);
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.4); pointer-events: none;
   }
   .product-body { padding: 14px 16px 16px; display: grid; gap: 6px; flex: 1; }
   .product-name { font-weight: 700; font-size: 15px; }
   .product-price { color: var(--teal); font-weight: 700; }
+  .size-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+  .size-btn {
+    border: 1.5px solid var(--line); background: #fff; color: var(--ink);
+    padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 700;
+  }
+  .size-btn:hover { border-color: var(--teal); }
+  .size-btn.active { border-color: var(--teal); background: var(--teal); color: #fff; }
   .qty-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
   .qty-btn {
     width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid var(--line);
@@ -409,15 +439,20 @@
 
 <script>
   const products = [
-    { name: "Silauto", price: 700, glyph: "🪨" },
-    { name: "Shiva Linga", price: 350, glyph: "🔱" },
-    { name: "Pashupatinath Idol", price: 2400, glyph: "🛕" },
-    { name: "Surya", price: 1100, glyph: "☀️" },
-    { name: "Ganesh Statue", price: 950, glyph: "🐘" },
-    { name: "Kumar Statue", price: 450, glyph: "🦚" },
-    { name: "Bhimshen Statue", price: 1800, glyph: "🗿" },
-    { name: "Laxmi Statue", price: 550, glyph: "🪷" }
+    { name: "Silauto", glyph: "🪨", sizes: [{ label: "8 inch", price: 500 }, { label: "1 ft", price: 700 }, { label: "1.5 ft", price: 950 }] },
+    { name: "Shiva Linga", glyph: "🔱", img: "img/Shivalinga.png", sizes: [{ label: "8 inch", price: 250 }, { label: "1 ft", price: 350 }, { label: "1.5 ft", price: 500 }] },
+    { name: "Pashupatinath Idol", glyph: "🛕", img: "img/Pashupatinath.png", sizes: [{ label: "8 inch", price: 1800 }, { label: "1 ft", price: 2400 }, { label: "1.5 ft", price: 3200 }] },
+    { name: "Surya", glyph: "☀️", sizes: [{ label: "8 inch", price: 800 }, { label: "1 ft", price: 1100 }, { label: "1.5 ft", price: 1500 }] },
+    { name: "Ganesh Statue", glyph: "🐘", img: "img/ganesh.png", sizes: [{ label: "8 inch", price: 700 }, { label: "1 ft", price: 950 }, { label: "1.5 ft", price: 1300 }] },
+    { name: "Kumar Statue", glyph: "🦚", sizes: [{ label: "8 inch", price: 320 }, { label: "1 ft", price: 450 }, { label: "1.5 ft", price: 620 }] },
+    { name: "Bhimshen Statue", glyph: "🗿", img: "img/Bhimsen.png", sizes: [{ label: "8 inch", price: 1300 }, { label: "1 ft", price: 1800 }, { label: "1.5 ft", price: 2400 }] },
+    { name: "Laxmi Statue", glyph: "🪷", sizes: [{ label: "8 inch", price: 400 }, { label: "1 ft", price: 550 }, { label: "1.5 ft", price: 750 }] },
+    { name: "Dhara", glyph: "⛲", img: "img/dhara.png", sizes: [{ label: "8 inch", price: 4500 }, { label: "1 ft", price: 6000 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Naag Statue", glyph: "🐍", img: "img/naag.png", fullHeight: true, sizes: [{ label: "8 inch", price: 450 }, { label: "1 ft", price: 650 }, { label: "1.5 ft", price: 900 }] },
+    { name: "Narayan Statue", glyph: "🐚", img: "img/Narayan.png", sizes: [{ label: "8 inch", price: 900 }, { label: "1 ft", price: 1200 }, { label: "1.5 ft", price: 1600 }] },
+    { name: "Saraswati Statue", glyph: "📚", img: "img/Saraswati.png", sizes: [{ label: "8 inch", price: 650 }, { label: "1 ft", price: 850 }, { label: "1.5 ft", price: 1150 }] }
   ];
+  const DEFAULT_SIZE = 1; // 1 ft
 
   const CART_KEY = "pasal_cart";
   let cartContents = {};
@@ -426,14 +461,69 @@
   const grid = document.getElementById("productGrid");
   const fmt = n => "Rs " + n.toLocaleString("en-IN");
 
+  // Product photos are shown with a "Surendra Stone Carving" watermark baked
+  // into the image itself, so "Open image in new tab" shows it too.
+  const WATERMARK_TEXT = "Surendra Stone Carving";
+  const watermarked = {};
+  function watermark(src) {
+    if (!watermarked[src]) watermarked[src] = new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas");
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const size = Math.max(14, Math.round(c.width / 14));
+        ctx.font = `700 ${size}px "Segoe UI", Arial, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
+        ctx.lineWidth = Math.max(1, size / 16);
+        ctx.translate(c.width / 2, c.height / 2);
+        ctx.rotate(-Math.PI / 6);
+        const reach = Math.hypot(c.width, c.height) / 2;
+        for (let y = -reach; y <= reach; y += size * 7) {
+          ctx.strokeText(WATERMARK_TEXT, 0, y);
+          ctx.fillText(WATERMARK_TEXT, 0, y);
+        }
+        const type = /\.png$/i.test(src) ? "image/png" : "image/jpeg";
+        try {
+          c.toBlob(b => resolve(b ? URL.createObjectURL(b) : null), type, 0.9);
+        } catch (e) {
+          resolve(null); // canvas blocked (e.g. page opened from file://)
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+    return watermarked[src];
+  }
+  function applyWatermarks(root) {
+    root.querySelectorAll("img[data-src]").forEach(img => {
+      const src = img.dataset.src;
+      img.removeAttribute("data-src");
+      watermark(src).then(url => {
+        if (url) { img.src = url; return; }
+        img.src = src;
+        img.parentElement.classList.add("wm-overlay");
+      });
+    });
+  }
+
   products.forEach((p, i) => {
     const card = document.createElement("div");
     card.className = "product";
+    const sizeBtns = p.sizes.map((s, si) =>
+      `<button class="size-btn${si === DEFAULT_SIZE ? ' active' : ''}" id="size-${i}-${si}" onclick="selectSize(${i}, ${si})">${s.label}</button>`
+    ).join("");
     card.innerHTML = `
-      <div class="product-img" aria-hidden="true">${p.glyph}</div>
+      <div class="product-img${p.fill ? ' fill' : ''}${p.fullHeight ? ' full-height' : ''}" aria-hidden="true">${p.img ? `<img data-src="${p.img}" alt=""${p.zoom ? ` style="--zoom: ${p.zoom}"` : ''}>` : p.glyph}</div>
       <div class="product-body">
         <span class="product-name">${p.name}</span>
-        <span class="product-price">${fmt(p.price)}</span>
+        <span class="product-price" id="price-${i}">${fmt(p.sizes[DEFAULT_SIZE].price)}</span>
+        <div class="size-row">${sizeBtns}</div>
         <div class="qty-row">
           <button class="qty-btn" aria-label="Decrease quantity" onclick="changeQty(${i}, -1)">−</button>
           <span class="qty-val" id="qty-${i}">1</span>
@@ -442,22 +532,101 @@
         <button class="add-btn" onclick="addToCart(${i})">Add to cart</button>
       </div>`;
     grid.appendChild(card);
+    applyWatermarks(card);
+    if (p.img) enableHoverZoom(card.querySelector(".product-img"));
   });
 
+  // Amazon-style zoom: hovering a product photo shows a lens over the photo
+  // and a separate pane beside the card with that area magnified.
+  const ZOOM = 2.5;
+  const zoomPane = document.createElement("div");
+  zoomPane.className = "zoom-pane";
+  document.body.appendChild(zoomPane);
+
+  function enableHoverZoom(box) {
+    if (!window.matchMedia("(hover: hover)").matches) return;
+    const img = box.querySelector("img");
+    const lens = document.createElement("div");
+    lens.className = "zoom-lens";
+    box.appendChild(lens);
+    box.classList.add("zoomable");
+
+    function hide() {
+      lens.style.display = "none";
+      zoomPane.style.display = "none";
+    }
+
+    box.addEventListener("mouseleave", hide);
+    box.addEventListener("mousemove", e => {
+      if (!img.naturalWidth || !img.currentSrc) return;
+      const rect = box.getBoundingClientRect();
+
+      // Where the picture actually sits inside the <img> (object-fit: contain,
+      // or cover for photos that fill their box and get cropped at the edges).
+      const cover = getComputedStyle(img).objectFit === "cover";
+      const fit = (cover ? Math.max : Math.min)(img.offsetWidth / img.naturalWidth, img.offsetHeight / img.naturalHeight);
+      const cw = img.naturalWidth * fit, ch = img.naturalHeight * fit;
+      const cx = img.offsetLeft + (img.offsetWidth - cw) / 2;
+      const cy = img.offsetTop + (img.offsetHeight - ch) / 2;
+
+      // The part of the picture that is visible on screen (a zoomed photo
+      // is bigger than its box and gets clipped by it).
+      const vx = Math.max(cx, img.offsetLeft, 0), vy = Math.max(cy, img.offsetTop, 0);
+      const vw = Math.min(cx + cw, img.offsetLeft + img.offsetWidth, box.clientWidth) - vx;
+      const vh = Math.min(cy + ch, img.offsetTop + img.offsetHeight, box.clientHeight) - vy;
+
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      if (mx < vx || mx > vx + vw || my < vy || my > vy + vh) { hide(); return; }
+
+      const paneW = zoomPane.offsetWidth || 380, paneH = zoomPane.offsetHeight || 380;
+      const lw = Math.min(vw, paneW / ZOOM), lh = Math.min(vh, paneH / ZOOM);
+      const lx = Math.min(Math.max(mx - lw / 2, vx), vx + vw - lw);
+      const ly = Math.min(Math.max(my - lh / 2, vy), vy + vh - lh);
+      Object.assign(lens.style, {
+        display: "block", width: lw + "px", height: lh + "px", left: lx + "px", top: ly + "px"
+      });
+
+      zoomPane.style.backgroundImage = `url("${img.currentSrc}")`;
+      zoomPane.style.backgroundSize = (cw * ZOOM) + "px " + (ch * ZOOM) + "px";
+      zoomPane.style.backgroundPosition = -((lx - cx) * ZOOM) + "px " + -((ly - cy) * ZOOM) + "px";
+      zoomPane.classList.toggle("wm-overlay", box.classList.contains("wm-overlay"));
+
+      // Beside the card: right if it fits, otherwise left.
+      const card = box.closest(".product").getBoundingClientRect();
+      let left = card.right + 12;
+      if (left + paneW > window.innerWidth - 8) left = card.left - paneW - 12;
+      const top = Math.min(Math.max(rect.top, 8), window.innerHeight - paneH - 8);
+      zoomPane.style.left = Math.max(8, left) + "px";
+      zoomPane.style.top = top + "px";
+      zoomPane.style.display = "block";
+    });
+  }
+
   const qty = new Array(products.length).fill(1);
+  const selectedSize = new Array(products.length).fill(DEFAULT_SIZE);
 
   function changeQty(i, d) {
     qty[i] = Math.max(1, qty[i] + d);
     document.getElementById("qty-" + i).textContent = qty[i];
   }
 
+  function selectSize(i, si) {
+    products[i].sizes.forEach((s, j) => {
+      document.getElementById("size-" + i + "-" + j).classList.toggle("active", j === si);
+    });
+    selectedSize[i] = si;
+    document.getElementById("price-" + i).textContent = fmt(products[i].sizes[si].price);
+  }
+
   function addToCart(i) {
+    const si = selectedSize[i];
+    const key = i + ":" + si;
     cartCount += qty[i];
-    cartContents[i] = (cartContents[i] || 0) + qty[i];
+    cartContents[key] = (cartContents[key] || 0) + qty[i];
     localStorage.setItem(CART_KEY, JSON.stringify(cartContents));
     document.getElementById("cartCount").textContent = cartCount;
     const toast = document.getElementById("toast");
-    toast.textContent = qty[i] + " × " + products[i].name + " added to cart";
+    toast.textContent = qty[i] + " × " + products[i].name + " (" + products[i].sizes[si].label + ") added to cart";
     toast.classList.add("show");
     clearTimeout(toast._t);
     toast._t = setTimeout(() => toast.classList.remove("show"), 2200);
