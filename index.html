@@ -117,11 +117,13 @@
     transition: border-color 0.15s, transform 0.15s;
   }
   .cat:hover { border-color: var(--teal); transform: translateY(-2px); }
+  .cat.active { border-color: var(--teal); box-shadow: inset 0 0 0 1px var(--teal); }
   .cat .glyph { font-size: 26px; display: block; margin-bottom: 8px; }
 
   /* Products */
   .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
   .product { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+  .product[hidden] { display: none; }
   .product-img {
     aspect-ratio: 4 / 3; background: var(--marigold-soft);
     display: flex; align-items: center; justify-content: center;
@@ -309,7 +311,7 @@
         <p class="lead">Traditional Nepali stone carving from our workshop — deity statues, dharas, and household stoneware, shaped with the same craft passed down through generations.</p>
         <div class="hero-ctas">
           <button class="btn btn-solid btn-lg" onclick="document.getElementById('shop').scrollIntoView({behavior:'smooth'})">Explore our carvings</button>
-          <button class="btn btn-lg" onclick="document.getElementById('categories').scrollIntoView({behavior:'smooth'})">Browse categories</button>
+          <button class="btn btn-lg" onclick="scrollToCategories()">Browse categories</button>
         </div>
         <p class="hero-note"><span class="dot"></span> Delivering across Kathmandu Valley · Nationwide by courier</p>
       </div>
@@ -329,13 +331,13 @@
     <div class="wrap">
       <div class="section-head">
         <h2>Browse by category</h2>
-        <a href="#shop">View all →</a>
+        <a href="#shop" data-cat="all">View all →</a>
       </div>
       <div class="cats">
-        <a class="cat" href="#shop"><span class="glyph" aria-hidden="true">🏺</span>Household</a>
-        <a class="cat" href="#shop"><span class="glyph" aria-hidden="true">📿</span>Small items</a>
-        <a class="cat" href="#shop"><span class="glyph" aria-hidden="true">🗿</span>Statues</a>
-        <a class="cat" href="#shop"><span class="glyph" aria-hidden="true">⛲</span>Dharas</a>
+        <a class="cat" href="#shop" data-cat="household"><span class="glyph" aria-hidden="true">🏺</span>Household</a>
+        <a class="cat" href="#shop" data-cat="small"><span class="glyph" aria-hidden="true">📿</span>Small items</a>
+        <a class="cat" href="#shop" data-cat="statues"><span class="glyph" aria-hidden="true">🗿</span>Statues</a>
+        <a class="cat" href="#shop" data-cat="dharas"><span class="glyph" aria-hidden="true">⛲</span>Dharas</a>
       </div>
     </div>
   </section>
@@ -343,8 +345,8 @@
   <section id="shop">
     <div class="wrap">
       <div class="section-head">
-        <h2>Featured carvings</h2>
-        <a href="#">See everything →</a>
+        <h2 id="featuredHeading">Featured carvings</h2>
+        <a href="#shop" data-cat="all">See everything →</a>
       </div>
       <div class="grid" id="productGrid"></div>
     </div>
@@ -366,7 +368,7 @@
           <span>Changed your mind? We'll sort it out.</span>
         </div>
         <a class="trust-item trust-link" href="pasal-contact.html">
-          <strong>Viber support</strong>
+          <strong>WhatsApp support</strong>
           <span>Message us for order help anytime. →</span>
         </a>
       </div>
@@ -392,7 +394,7 @@
       <h4>Help</h4>
       <ul>
         <li><a href="pasal-contact.html">Contact us</a></li>
-        <li><a href="pasal-contact.html" id="footerViber">Contact on Viber</a></li>
+        <li><a href="pasal-contact.html" id="footerWhatsApp">Contact on WhatsApp</a></li>
         <li><a href="pasal-contact.html">Shipping &amp; returns</a></li>
       </ul>
     </div>
@@ -439,20 +441,20 @@
 
 <script>
   const products = [
-    { name: "Silauto", glyph: "🪨", sizes: [{ label: "8 inch", price: 500 }, { label: "1 ft", price: 700 }, { label: "1.5 ft", price: 950 }] },
-    { name: "Shiva Linga", glyph: "🔱", img: "img/Shivalinga.png", sizes: [{ label: "8 inch", price: 250 }, { label: "1 ft", price: 350 }, { label: "1.5 ft", price: 500 }] },
-    { name: "Pashupatinath Idol", glyph: "🛕", img: "img/Pashupatinath.png", sizes: [{ label: "8 inch", price: 1800 }, { label: "1 ft", price: 2400 }, { label: "1.5 ft", price: 3200 }] },
-    { name: "Surya", glyph: "☀️", sizes: [{ label: "8 inch", price: 800 }, { label: "1 ft", price: 1100 }, { label: "1.5 ft", price: 1500 }] },
-    { name: "Ganesh Statue", glyph: "🐘", img: "img/ganesh.png", sizes: [{ label: "8 inch", price: 700 }, { label: "1 ft", price: 950 }, { label: "1.5 ft", price: 1300 }] },
-    { name: "Kumar Statue", glyph: "🦚", sizes: [{ label: "8 inch", price: 320 }, { label: "1 ft", price: 450 }, { label: "1.5 ft", price: 620 }] },
-    { name: "Bhimshen Statue", glyph: "🗿", img: "img/Bhimsen.png", sizes: [{ label: "8 inch", price: 1300 }, { label: "1 ft", price: 1800 }, { label: "1.5 ft", price: 2400 }] },
-    { name: "Laxmi Statue", glyph: "🪷", sizes: [{ label: "8 inch", price: 400 }, { label: "1 ft", price: 550 }, { label: "1.5 ft", price: 750 }] },
-    { name: "Dhara", glyph: "⛲", img: "img/dhara.png", sizes: [{ label: "8 inch", price: 4500 }, { label: "1 ft", price: 6000 }, { label: "1.5 ft", price: 9000 }] },
-    { name: "Naag Statue", glyph: "🐍", img: "img/naag.png", fullHeight: true, sizes: [{ label: "8 inch", price: 450 }, { label: "1 ft", price: 650 }, { label: "1.5 ft", price: 900 }] },
-    { name: "Narayan Statue", glyph: "🐚", img: "img/Narayan.png", sizes: [{ label: "8 inch", price: 900 }, { label: "1 ft", price: 1200 }, { label: "1.5 ft", price: 1600 }] },
-    { name: "Saraswati Statue", glyph: "📚", img: "img/Saraswati.png", sizes: [{ label: "8 inch", price: 650 }, { label: "1 ft", price: 850 }, { label: "1.5 ft", price: 1150 }] }
+    { name: "Silauto", glyph: "🪨", img: "img/Silauto.png", sizes: [{ label: "4 inch", price: 400 }, { label: "6 inch", price: 700 }, { label: "1 ft", price: 1000 }] },
+    { name: "Shiva Linga", glyph: "🔱", img: "img/Shivalinga.png", sizes: [{ label: "4 inch", price: 600 }, { label: "8 inch", price: 2200 }, { label: "1 ft", price: 4500 }, { label: "1.5 ft", price: 8500 }] },
+    { name: "Pashupatinath Idol", glyph: "🛕", img: "img/Pashupatinath.png", sizes: [{ label: "4 inch", price: 1200 }, { label: "8 inch", price: 3000 }, { label: "1 ft", price: 8000 }, { label: "1.5 ft", price: 15000 }] },
+    { name: "Surya", glyph: "☀️", img: "img/Surya.png", sizes: [{ label: "6 inch", price: 800 }, { label: "9 inch", price: 1200 }] },
+    { name: "Ganesh Statue", glyph: "🐘", img: "img/ganesh.png", sizes: [{ label: "8 inch", price: 2500 }, { label: "1 ft", price: 5500 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Kumar", glyph: "🦚", img: "img/Kumar.png", sizes: [{ label: "4 inch", price: 700 }, { label: "8 inch", price: 1200 }, { label: "1 ft", price: 1800 }] },
+    { name: "Bhimshen Statue", glyph: "🗿", img: "img/Bhimsen.png", sizes: [{ label: "8 inch", price: 2500 }, { label: "1 ft", price: 5500 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Laxmi Statue", glyph: "🪷", sizes: [{ label: "8 inch", price: 2500 }, { label: "1 ft", price: 5500 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Dhara", glyph: "⛲", img: "img/dhara.png", sizes: [{ label: "9 inch", price: 3500 }, { label: "1 ft", price: 5000 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Naag Statue", glyph: "🐍", img: "img/naag.png", fullHeight: true, sizes: [{ label: "8 inch", price: 1500 }, { label: "1 ft", price: 3500 }, { label: "1.5 ft", price: 6000 }] },
+    { name: "Narayan Statue", glyph: "🐚", img: "img/Narayan.png", sizes: [{ label: "8 inch", price: 2500 }, { label: "1 ft", price: 5500 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Saraswati Statue", glyph: "📚", img: "img/Saraswati.png", sizes: [{ label: "8 inch", price: 2500 }, { label: "1 ft", price: 5500 }, { label: "1.5 ft", price: 9000 }] }
   ];
-  const DEFAULT_SIZE = 1; // 1 ft
+  const DEFAULT_SIZE = 0; // smallest size, so each card shows its starting price
 
   const CART_KEY = "pasal_cart";
   let cartContents = {};
@@ -512,9 +514,11 @@
     });
   }
 
+  const cards = [];
   products.forEach((p, i) => {
     const card = document.createElement("div");
     card.className = "product";
+    cards.push(card);
     const sizeBtns = p.sizes.map((s, si) =>
       `<button class="size-btn${si === DEFAULT_SIZE ? ' active' : ''}" id="size-${i}-${si}" onclick="selectSize(${i}, ${si})">${s.label}</button>`
     ).join("");
@@ -534,6 +538,60 @@
     grid.appendChild(card);
     applyWatermarks(card);
     if (p.img) enableHoverZoom(card.querySelector(".product-img"));
+  });
+
+  // "Browse by category" shows only that category's picks in the shop grid;
+  // "View all" / "See everything" brings back the full Featured carvings.
+  const CATEGORY_TITLES = { household: "Household", small: "Small items", statues: "Statues", dharas: "Dharas" };
+  const CATEGORY_PICKS = {
+    household: ["Silauto", "Surya", "Ganesh Statue", "Bhimshen Statue"],
+    small: ["Shiva Linga", "Pashupatinath Idol", "Surya", "Naag Statue"],
+    statues: ["Ganesh Statue", "Bhimshen Statue", "Narayan Statue", "Laxmi Statue"],
+    dharas: ["Dhara"]
+  };
+
+  function showCategory(cat) {
+    const picks = (CATEGORY_PICKS[cat] || [])
+      .map(name => products.findIndex(p => p.name === name))
+      .filter(i => i >= 0);
+    const showAll = picks.length === 0;
+    const order = showAll ? products.map((p, i) => i) : picks;
+    cards.forEach(c => { c.hidden = true; });
+    order.forEach(i => { cards[i].hidden = false; grid.appendChild(cards[i]); });
+    document.querySelectorAll(".cat").forEach(a => a.classList.toggle("active", a.dataset.cat === cat));
+
+    const heading = document.getElementById("featuredHeading");
+    heading.textContent = showAll ? "Featured carvings" : CATEGORY_TITLES[cat];
+
+    // Land with the heading just below the sticky header.
+    const headerH = document.querySelector("header").offsetHeight;
+    const top = heading.getBoundingClientRect().top + window.scrollY - headerH - 16;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }
+
+  // "Categories" links scroll only until the categories section ends at the
+  // bottom of the screen, keeping what's above it in view and Featured
+  // carvings out of view; the heading never slips under the sticky header.
+  function scrollToCategories() {
+    const section = document.getElementById("categories");
+    const headerH = document.querySelector("header").offsetHeight;
+    const rect = section.getBoundingClientRect();
+    const headingTop = rect.top + window.scrollY - headerH;
+    const endAtBottom = rect.bottom + window.scrollY - window.innerHeight;
+    window.scrollTo({ top: Math.max(0, Math.min(headingTop, endAtBottom)), behavior: "smooth" });
+  }
+  document.querySelectorAll('a[href="#categories"]').forEach(a => {
+    a.addEventListener("click", e => {
+      e.preventDefault();
+      scrollToCategories();
+    });
+  });
+
+  document.querySelectorAll("[data-cat]").forEach(a => {
+    a.addEventListener("click", e => {
+      e.preventDefault();
+      showCategory(a.dataset.cat);
+    });
   });
 
   // Amazon-style zoom: hovering a product photo shows a lens over the photo
@@ -579,7 +637,11 @@
       if (mx < vx || mx > vx + vw || my < vy || my > vy + vh) { hide(); return; }
 
       const paneW = zoomPane.offsetWidth || 380, paneH = zoomPane.offsetHeight || 380;
-      const lw = Math.min(vw, paneW / ZOOM), lh = Math.min(vh, paneH / ZOOM);
+      // The lens must fit inside the photo, otherwise the pane shows empty
+      // space; narrow photos get a smaller lens and therefore a stronger zoom.
+      const fitLens = Math.min(1, vw / (paneW / ZOOM), vh / (paneH / ZOOM));
+      const zoom = ZOOM / fitLens;
+      const lw = paneW / zoom, lh = paneH / zoom;
       const lx = Math.min(Math.max(mx - lw / 2, vx), vx + vw - lw);
       const ly = Math.min(Math.max(my - lh / 2, vy), vy + vh - lh);
       Object.assign(lens.style, {
@@ -587,8 +649,8 @@
       });
 
       zoomPane.style.backgroundImage = `url("${img.currentSrc}")`;
-      zoomPane.style.backgroundSize = (cw * ZOOM) + "px " + (ch * ZOOM) + "px";
-      zoomPane.style.backgroundPosition = -((lx - cx) * ZOOM) + "px " + -((ly - cy) * ZOOM) + "px";
+      zoomPane.style.backgroundSize = (cw * zoom) + "px " + (ch * zoom) + "px";
+      zoomPane.style.backgroundPosition = -((lx - cx) * zoom) + "px " + -((ly - cy) * zoom) + "px";
       zoomPane.classList.toggle("wm-overlay", box.classList.contains("wm-overlay"));
 
       // Beside the card: right if it fits, otherwise left.
@@ -602,12 +664,26 @@
     });
   }
 
+  const MAX_QTY = 3; // most of one statue (in one size) a customer can order
   const qty = new Array(products.length).fill(1);
   const selectedSize = new Array(products.length).fill(DEFAULT_SIZE);
 
   function changeQty(i, d) {
-    qty[i] = Math.max(1, qty[i] + d);
+    const inCart = cartContents[i + ":" + selectedSize[i]] || 0;
+    const room = Math.max(1, MAX_QTY - inCart);
+    if (d > 0 && qty[i] >= room) {
+      showToast(inCart ? "Max " + MAX_QTY + " per statue — you already have " + inCart + " in your cart" : "Max " + MAX_QTY + " per statue");
+    }
+    qty[i] = Math.min(room, Math.max(1, qty[i] + d));
     document.getElementById("qty-" + i).textContent = qty[i];
+  }
+
+  function showToast(text) {
+    const toast = document.getElementById("toast");
+    toast.textContent = text;
+    toast.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toast.classList.remove("show"), 2200);
   }
 
   function selectSize(i, si) {
@@ -616,33 +692,39 @@
     });
     selectedSize[i] = si;
     document.getElementById("price-" + i).textContent = fmt(products[i].sizes[si].price);
+    changeQty(i, 0); // keep the count within what's still allowed for this size
   }
 
   function addToCart(i) {
     const si = selectedSize[i];
     const key = i + ":" + si;
-    cartCount += qty[i];
-    cartContents[key] = (cartContents[key] || 0) + qty[i];
+    const label = products[i].name + " (" + products[i].sizes[si].label + ")";
+    const inCart = cartContents[key] || 0;
+    const adding = Math.min(qty[i], MAX_QTY - inCart);
+    if (adding <= 0) {
+      showToast("You already have the max of " + MAX_QTY + " × " + label + " in your cart");
+      return;
+    }
+    cartCount += adding;
+    cartContents[key] = inCart + adding;
     localStorage.setItem(CART_KEY, JSON.stringify(cartContents));
     document.getElementById("cartCount").textContent = cartCount;
-    const toast = document.getElementById("toast");
-    toast.textContent = qty[i] + " × " + products[i].name + " (" + products[i].sizes[si].label + ") added to cart";
-    toast.classList.add("show");
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => toast.classList.remove("show"), 2200);
+    showToast(adding + " × " + label + " added to cart" +
+      (adding < qty[i] ? " (max " + MAX_QTY + " per statue)" : ""));
+    qty[i] = 1;
+    document.getElementById("qty-" + i).textContent = 1;
   }
 
   function goToCart() {
     window.location.href = "pasal-cart.html";
   }
 
-  // Footer "Contact on Viber" opens Viber directly; keep pasal-contact.html as fallback
+  // Footer "Contact on WhatsApp" opens WhatsApp directly; keep pasal-contact.html as fallback
   const STORE_PHONE = "98XXXXXXXX";
-  (function wireViber() {
-    const link = document.getElementById("footerViber");
+  (function wireWhatsApp() {
+    const link = document.getElementById("footerWhatsApp");
     if (!link) return;
-    const intl = "+977" + STORE_PHONE.replace(/[^0-9]/g, "");
-    link.href = "viber://chat?number=" + encodeURIComponent(intl);
+    link.href = "https://wa.me/977" + STORE_PHONE.replace(/[^0-9]/g, "");
   })();
 
   (function checkSession() {

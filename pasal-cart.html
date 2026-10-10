@@ -108,6 +108,7 @@
     background: #fff; font-size: 16px; font-weight: 700; color: var(--ink);
   }
   .qty-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .qty-btn:disabled { opacity: 0.4; cursor: not-allowed; border-color: var(--line); color: inherit; }
   .qty-val { min-width: 22px; text-align: center; font-weight: 700; }
 
   /* Empty state */
@@ -323,27 +324,28 @@
   const DELIVERY_FEE = 100;
 
   const catalog = [
-    { name: "Silauto", glyph: "🪨", sizes: [{ label: "8 inch", price: 500 }, { label: "1 ft", price: 700 }, { label: "1.5 ft", price: 950 }] },
-    { name: "Shiva Linga", glyph: "🔱", img: "img/Shivalinga.png", sizes: [{ label: "8 inch", price: 250 }, { label: "1 ft", price: 350 }, { label: "1.5 ft", price: 500 }] },
-    { name: "Pashupatinath Idol", glyph: "🛕", img: "img/Pashupatinath.png", sizes: [{ label: "8 inch", price: 1800 }, { label: "1 ft", price: 2400 }, { label: "1.5 ft", price: 3200 }] },
-    { name: "Surya", glyph: "☀️", sizes: [{ label: "8 inch", price: 800 }, { label: "1 ft", price: 1100 }, { label: "1.5 ft", price: 1500 }] },
-    { name: "Ganesh Statue", glyph: "🐘", img: "img/ganesh.png", sizes: [{ label: "8 inch", price: 700 }, { label: "1 ft", price: 950 }, { label: "1.5 ft", price: 1300 }] },
-    { name: "Kumar Statue", glyph: "🦚", sizes: [{ label: "8 inch", price: 320 }, { label: "1 ft", price: 450 }, { label: "1.5 ft", price: 620 }] },
-    { name: "Bhimshen Statue", glyph: "🗿", img: "img/Bhimsen.png", sizes: [{ label: "8 inch", price: 1300 }, { label: "1 ft", price: 1800 }, { label: "1.5 ft", price: 2400 }] },
-    { name: "Laxmi Statue", glyph: "🪷", sizes: [{ label: "8 inch", price: 400 }, { label: "1 ft", price: 550 }, { label: "1.5 ft", price: 750 }] },
-    { name: "Dhara", glyph: "⛲", img: "img/dhara.png", sizes: [{ label: "8 inch", price: 4500 }, { label: "1 ft", price: 6000 }, { label: "1.5 ft", price: 9000 }] },
-    { name: "Naag Statue", glyph: "🐍", img: "img/naag.png", fullHeight: true, sizes: [{ label: "8 inch", price: 450 }, { label: "1 ft", price: 650 }, { label: "1.5 ft", price: 900 }] },
-    { name: "Narayan Statue", glyph: "🐚", img: "img/Narayan.png", sizes: [{ label: "8 inch", price: 900 }, { label: "1 ft", price: 1200 }, { label: "1.5 ft", price: 1600 }] },
-    { name: "Saraswati Statue", glyph: "📚", img: "img/Saraswati.png", sizes: [{ label: "8 inch", price: 650 }, { label: "1 ft", price: 850 }, { label: "1.5 ft", price: 1150 }] }
+    { name: "Silauto", glyph: "🪨", img: "img/Silauto.png", sizes: [{ label: "4 inch", price: 400 }, { label: "6 inch", price: 700 }, { label: "1 ft", price: 1000 }] },
+    { name: "Shiva Linga", glyph: "🔱", img: "img/Shivalinga.png", sizes: [{ label: "4 inch", price: 600 }, { label: "8 inch", price: 2200 }, { label: "1 ft", price: 4500 }, { label: "1.5 ft", price: 8500 }] },
+    { name: "Pashupatinath Idol", glyph: "🛕", img: "img/Pashupatinath.png", sizes: [{ label: "4 inch", price: 1200 }, { label: "8 inch", price: 3000 }, { label: "1 ft", price: 8000 }, { label: "1.5 ft", price: 15000 }] },
+    { name: "Surya", glyph: "☀️", img: "img/Surya.png", sizes: [{ label: "6 inch", price: 800 }, { label: "9 inch", price: 1200 }] },
+    { name: "Ganesh Statue", glyph: "🐘", img: "img/ganesh.png", sizes: [{ label: "8 inch", price: 2500 }, { label: "1 ft", price: 5500 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Kumar", glyph: "🦚", img: "img/Kumar.png", sizes: [{ label: "4 inch", price: 700 }, { label: "8 inch", price: 1200 }, { label: "1 ft", price: 1800 }] },
+    { name: "Bhimshen Statue", glyph: "🗿", img: "img/Bhimsen.png", sizes: [{ label: "8 inch", price: 2500 }, { label: "1 ft", price: 5500 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Laxmi Statue", glyph: "🪷", sizes: [{ label: "8 inch", price: 2500 }, { label: "1 ft", price: 5500 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Dhara", glyph: "⛲", img: "img/dhara.png", sizes: [{ label: "9 inch", price: 3500 }, { label: "1 ft", price: 5000 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Naag Statue", glyph: "🐍", img: "img/naag.png", fullHeight: true, sizes: [{ label: "8 inch", price: 1500 }, { label: "1 ft", price: 3500 }, { label: "1.5 ft", price: 6000 }] },
+    { name: "Narayan Statue", glyph: "🐚", img: "img/Narayan.png", sizes: [{ label: "8 inch", price: 2500 }, { label: "1 ft", price: 5500 }, { label: "1.5 ft", price: 9000 }] },
+    { name: "Saraswati Statue", glyph: "📚", img: "img/Saraswati.png", sizes: [{ label: "8 inch", price: 2500 }, { label: "1 ft", price: 5500 }, { label: "1.5 ft", price: 9000 }] }
   ];
 
   const CART_KEY = "pasal_cart";
+  const MAX_QTY = 3; // most of one statue (in one size) a customer can order
   let cart = [];
   try {
     const saved = JSON.parse(localStorage.getItem(CART_KEY)) || {};
     Object.entries(saved).forEach(([key, q]) => {
       const [i, si] = key.split(":").map(Number);
-      q = Number(q);
+      q = Math.min(MAX_QTY, Number(q));
       const product = catalog[i];
       const size = product && product.sizes[si];
       if (size && q > 0) {
@@ -441,7 +443,7 @@
           <div class="qty-row">
             <button class="qty-btn" aria-label="Decrease quantity of ${item.name}" onclick="changeQty(${i}, -1)">−</button>
             <span class="qty-val">${item.qty}</span>
-            <button class="qty-btn" aria-label="Increase quantity of ${item.name}" onclick="changeQty(${i}, 1)">+</button>
+            <button class="qty-btn" aria-label="Increase quantity of ${item.name}" onclick="changeQty(${i}, 1)"${item.qty >= MAX_QTY ? ` disabled title="Max ${MAX_QTY} per statue"` : ""}>+</button>
           </div>
         </div>`;
       list.appendChild(row);
@@ -467,7 +469,7 @@
   }
 
   function changeQty(i, d) {
-    cart[i].qty = Math.max(1, cart[i].qty + d);
+    cart[i].qty = Math.min(MAX_QTY, Math.max(1, cart[i].qty + d));
     saveCart();
     render();
   }
